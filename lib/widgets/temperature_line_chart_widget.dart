@@ -1,8 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../app_exports.dart';
 import '../models/temperature_config.dart';
-import '../services/database_temperature_service.dart';
-import '../services/firestore_realtime_service.dart';
 
 /// ============================================================================
 /// TEMPERATURE LINE CHART WIDGET
