@@ -35,6 +35,7 @@ export 'screens/real_time_data_screen.dart';
 export 'models/generator.dart';
 export 'models/logsheet_data.dart';
 export 'models/temperature_config.dart';
+export 'models/generator_status.dart';
 
 // 🔧 BUSINESS SERVICES
 export 'services/logsheet_service.dart';
@@ -53,6 +54,7 @@ export 'services/spreadsheet_download_service.dart';
 export 'services/firestore_realtime_service.dart';
 export 'services/firestore_historical_service.dart';
 export 'services/migration_service.dart';
+export 'services/generator_status_sync_service.dart';
 
 // 👤 DATA MANAGERS
 export 'managers/generator_data_manager.dart';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../app_exports.dart';
 import '../services/sync_manager.dart';
+import '../services/generator_status_sync_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -23,11 +24,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadStoredFileIds(); // This now includes loading generator statuses
     _initializeRealtimeData();
+    _setupGeneratorStatusSync(); // Setup real-time sync untuk status generator
   }
 
   @override
   void dispose() {
     _realtimeListener?.cancel();
+    GeneratorStatusSyncService.cancelRealtimeListener(); // Cancel generator status listener
     super.dispose();
   }
 
@@ -79,6 +82,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _useFirestoreData = false;
       });
+    }
+  }
+
+  // Setup real-time sync untuk generator status manual
+  Future<void> _setupGeneratorStatusSync() async {
+    try {
+      print('🔄 DASHBOARD: Setting up generator status sync...');
+
+      // Initialize service
+      await GeneratorStatusSyncService.initialize();
+
+      // Get generator names
+      final generatorNames = generators.map((g) => g.name).toList();
+
+      // Download latest statuses from other devices
+      final latestStatuses =
+          await GeneratorStatusSyncService.downloadLatestStatuses(
+            generatorNames,
+          );
+
+      // Update local generator statuses if there are newer ones
+      if (latestStatuses.isNotEmpty) {
+        setState(() {
+          for (int i = 0; i < generators.length; i++) {
+            final generatorName = generators[i].name;
+            if (latestStatuses.containsKey(generatorName)) {
+              generators[i] = GeneratorData(
+                id: generators[i].id,
+                name: generators[i].name,
+                isActive: latestStatuses[generatorName]!,
+                temperature: generators[i].temperature,
+                pressure: generators[i].pressure,
+                operationHours: generators[i].operationHours,
+                fileId: generators[i].fileId,
+              );
+            }
+          }
+        });
+        print('✅ DASHBOARD: Updated generator statuses from cloud');
+      }
+
+      // Setup real-time listener for status changes from other devices
+      GeneratorStatusSyncService.setupRealtimeListener(generatorNames, (
+        generatorName,
+        isActive,
+        updatedBy,
+      ) {
+        if (mounted) {
+          setState(() {
+            final index = generators.indexWhere((g) => g.name == generatorName);
+            if (index != -1) {
+              generators[index] = GeneratorData(
+                id: generators[index].id,
+                name: generators[index].name,
+                isActive: isActive,
+                temperature: generators[index].temperature,
+                pressure: generators[index].pressure,
+                operationHours: generators[index].operationHours,
+                fileId: generators[index].fileId,
+              );
+            }
+          });
+          print(
+            '🔔 DASHBOARD: Generator $generatorName status updated to $isActive by $updatedBy',
+          );
+        }
+      });
+
+      print('✅ DASHBOARD: Generator status sync setup completed');
+    } catch (e) {
+      print('❌ DASHBOARD: Error setting up generator status sync: $e');
     }
   }
 
@@ -285,16 +359,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         } else {
           // PRIORITAS 3: Generator belum memiliki data (Mitsubishi #3, #4, etc.)
-          // Berikan status default tanpa fileId untuk generator yang belum digunakan
+          // Load saved generator status to preserve user manual settings
           final storedFileId = await StorageService.getActiveFileId(
             generatorName,
           );
+
+          // 🔧 MANUAL SWITCH: Load saved status even for generators without data
+          bool userSetActive = false;
+
+          try {
+            userSetActive = await DatabaseStorageService.getGeneratorStatus(
+              generatorName,
+            );
+            print(
+              '✅ DASHBOARD: Loaded manual status from SQLite for $generatorName: $userSetActive',
+            );
+          } catch (e) {
+            final savedStatus = await StorageService.getGeneratorStatus(
+              generatorName,
+            );
+            userSetActive = savedStatus ?? false;
+            print(
+              '⚠️ DASHBOARD: SQLite failed, using SharedPreferences for $generatorName: $userSetActive',
+            );
+
+            // Sync to SQLite for consistency
+            if (savedStatus != null) {
+              await DatabaseStorageService.setGeneratorStatus(
+                generatorName,
+                userSetActive,
+              );
+            }
+          }
 
           setState(() {
             generators[i] = GeneratorData(
               id: generators[i].id,
               name: generators[i].name,
-              isActive: false, // Generator belum aktif karena belum ada data
+              isActive:
+                  userSetActive, // 🔧 MANUAL: Use saved user setting, not automatic false
               temperature: generators[i].temperature, // Gunakan default
               pressure: generators[i].pressure, // Gunakan default
               operationHours: generators[i].operationHours, // Gunakan default
@@ -304,11 +407,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (storedFileId == null || storedFileId.isEmpty) {
             print(
-              '📝 DASHBOARD: Generator ${generatorName} ready for first data entry',
+              '📝 DASHBOARD: Generator ${generatorName} ready for first data entry, manual status: $userSetActive',
             );
           } else {
             print(
-              '⚠️ DASHBOARD: Using stored fileId for ${generatorName}: $storedFileId',
+              '⚠️ DASHBOARD: Using stored fileId for ${generatorName}: $storedFileId, manual status: $userSetActive',
             );
           }
         }
@@ -592,7 +695,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     });
 
-    // 🔧 FIX: Save to both storage systems to ensure consistency
+    // 🔧 MANUAL SWITCH: Save to local storage systems
     final generator = generators.firstWhere((g) => g.id == id);
 
     // Primary storage: SQLite database
@@ -602,8 +705,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await StorageService.saveGeneratorStatus(generator.name, newStatus);
 
     print(
-      '✅ DASHBOARD: Updated ${generator.name} status to $newStatus in both storage systems',
+      '✅ DASHBOARD: Updated ${generator.name} status to $newStatus (MANUAL)',
     );
+
+    // 🚀 SYNC MANUAL STATUS: Upload to Firestore for multi-device sync
+    try {
+      final uploaded = await GeneratorStatusSyncService.uploadGeneratorStatus(
+        generator.name,
+        newStatus,
+      );
+      if (uploaded) {
+        print(
+          '✅ DASHBOARD: Generator ${generator.name} status synced to cloud',
+        );
+      }
+    } catch (e) {
+      print('❌ DASHBOARD: Failed to sync generator status: $e');
+    }
 
     // 🚀 IMMEDIATE SYNC: Trigger upload after generator status change
     _triggerImmediateSync();
@@ -1018,8 +1136,8 @@ class _GeneratorCardState extends State<GeneratorCard> {
                   const SizedBox(height: 4),
                   Text(
                     isActive
-                        ? 'Genset mesin aktif beroperasi saat ini'
-                        : 'Unit Pembangkit Cadangan',
+                        ? 'Mesin sedang beroperasi'
+                        : 'Mesin dalam standby',
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 16),
