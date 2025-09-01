@@ -1,0 +1,32 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "powerplantlogsheet-8780a",
+          "appId": "1:76019636534:android:eb26908260c4d4e152bb97",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "powerplantlogsheet-8780a",
+          "configurations": {
+            "android": "1:76019636534:android:eb26908260c4d4e152bb97",
+            "ios": "1:76019636534:ios:d2cba12cf87bdb6b52bb97",
+            "macos": "1:76019636534:ios:d2cba12cf87bdb6b52bb97",
+            "web": "1:76019636534:web:767bcb2d33d3cb5852bb97",
+            "windows": "1:76019636534:web:3324aa524717fbc052bb97"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "76019636534",
+    "project_id": "powerplantlogsheet-8780a",
+    "storage_bucket": "powerplantlogsheet-8780a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76019636534:android:eb26908260c4d4e152bb97",
+        "android_client_info": {
+          "package_name": "com.example.flutter_coba3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcCiqCPSjzID0sWz39xxelcsHxJ8GWAUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76019636534:android:f8e8f2edc8b75ebb52bb97",
+        "android_client_info": {
+          "package_name": "com.powerplantlogsheet.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcCiqCPSjzID0sWz39xxelcsHxJ8GWAUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

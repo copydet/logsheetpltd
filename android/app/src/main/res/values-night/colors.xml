@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warna utama aplikasi untuk dark mode -->
+    <color name="primary_color">#3B82F6</color>
+    <color name="primary_variant">#2563EB</color>
+    <color name="secondary_color">#10B981</color>
+    
+    <!-- Warna untuk status -->
+    <color name="success_color">#10B981</color>
+    <color name="warning_color">#F59E0B</color>
+    <color name="error_color">#EF4444</color>
+    
+    <!-- Warna background untuk dark mode -->
+    <color name="background_light">#1F2937</color>
+    <color name="surface_light">#374151</color>
+    
+    <!-- Warna teks untuk dark mode -->
+    <color name="text_primary">#F9FAFB</color>
+    <color name="text_secondary">#D1D5DB</color>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warna utama aplikasi -->
+    <color name="primary_color">#1E3A8A</color>
+    <color name="primary_variant">#1E40AF</color>
+    <color name="secondary_color">#10B981</color>
+    
+    <!-- Warna untuk status -->
+    <color name="success_color">#10B981</color>
+    <color name="warning_color">#F59E0B</color>
+    <color name="error_color">#EF4444</color>
+    
+    <!-- Warna background -->
+    <color name="background_light">#FFFFFF</color>
+    <color name="surface_light">#F8FAFC</color>
+    
+    <!-- Warna teks -->
+    <color name="text_primary">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+</resources>
