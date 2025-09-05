@@ -490,19 +490,22 @@ class SyncManager {
       final sevenDaysAgo = DateTime.now().subtract(Duration(days: 7));
       final dateStr = sevenDaysAgo.toIso8601String().split('T')[0];
 
-      // Note: We'll listen to mitsubishi_1 for now as a primary collection
-      // In the future, we could set up separate listeners for each collection
-      _firestoreListener = _firestore
-          .collection('mitsubishi_1')
-          .where('date', isGreaterThanOrEqualTo: dateStr)
-          .snapshots()
-          .listen(
-            _handleFirestoreUpdates,
-            onError: (error) {
-              print('❌ SYNC: Firestore listener error: $error');
-              _addSyncError('Real-time sync error: $error');
-            },
-          );
+      // Listen to all mitsubishi collections for comprehensive sync
+      final collections = ['mitsubishi_1', 'mitsubishi_2', 'mitsubishi_3', 'mitsubishi_4'];
+      
+      for (String collection in collections) {
+        _firestore
+            .collection(collection)
+            .where('date', isGreaterThanOrEqualTo: dateStr)
+            .snapshots()
+            .listen(
+              _handleFirestoreUpdates,
+              onError: (error) {
+                print('❌ SYNC: Firestore listener error for $collection: $error');
+                _addSyncError('Real-time sync error for $collection: $error');
+              },
+            );
+      }
 
       _isListening = true;
       print('✅ SYNC: Real-time listeners active');

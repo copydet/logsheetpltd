@@ -41,34 +41,8 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // 🔧 CRITICAL FIX: Validasi fileId untuk Mitsubishi #1 di Detail Screen
     _currentValidFileId = widget.fileId;
-    _validateAndFixFileId();
     _initializeRealtimeData();
-  }
-
-  // Validasi dan perbaiki fileId untuk Mitsubishi #1
-  Future<void> _validateAndFixFileId() async {
-    if (widget.mesinName == 'Mitsubishi #1') {
-      final problematicFileIds = [
-        '1m-7mAUx8bFKBb9IeGcFUaH96nBJWT0Rw9Pv7VnP-iAM',
-        '1-_G5vZD6xyXpxu1skcdQMB1auGBEW8upurPMuCm9YwA',
-        '19Rq7EtX1IGdkXcie8c7O4WSDYd2SpM0rbeTehKkD-Zo',
-      ];
-
-      if (problematicFileIds.contains(widget.fileId)) {
-        // Gunakan fileId terbaru yang benar dari storage
-        final currentFileId = await StorageService.getActiveFileId(
-          widget.mesinName,
-        );
-        if (currentFileId != null && currentFileId.isNotEmpty) {
-          _currentValidFileId = currentFileId;
-          print(
-            '🔧 DETAIL: Fixed fileId for ${widget.mesinName}: $currentFileId (was: ${widget.fileId})',
-          );
-        }
-      }
-    }
   }
 
   // Dapatkan fileId yang benar untuk chart widget
@@ -378,28 +352,6 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
       print('🔄 DETAIL: fileId = "${widget.fileId}"');
       print('🔄 DETAIL: forceRefresh = $forceRefresh');
 
-      // 🔧 CRITICAL FIX: Dapatkan fileId yang benar untuk Mitsubishi #1
-      String validFileId = widget.fileId;
-      if (widget.mesinName == 'Mitsubishi #1') {
-        final problematicFileIds = [
-          '1m-7mAUx8bFKBb9IeGcFUaH96nBJWT0Rw9Pv7VnP-iAM',
-          '1-_G5vZD6xyXpxu1skcdQMB1auGBEW8upurPMuCm9YwA',
-          '19Rq7EtX1IGdkXcie8c7O4WSDYd2SpM0rbeTehKkD-Zo',
-        ];
-
-        if (problematicFileIds.contains(widget.fileId)) {
-          final currentFileId = await StorageService.getActiveFileId(
-            widget.mesinName,
-          );
-          if (currentFileId != null && currentFileId.isNotEmpty) {
-            validFileId = currentFileId;
-            print(
-              '🔧 DETAIL: Using corrected fileId: $validFileId (was: ${widget.fileId})',
-            );
-          }
-        }
-      }
-
       // Jika tidak force refresh, coba ambil dari storage terlebih dahulu
       if (!forceRefresh) {
         final storedData = await StorageService.getLastLogsheetData(
@@ -411,8 +363,8 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
         }
       }
 
-      // Coba ambil fileId dari storage jika tidak ada, atau gunakan fileId yang sudah divalidasi
-      String fileId = validFileId;
+      // Coba ambil fileId dari storage jika tidak ada
+      String fileId = widget.fileId;
       if (fileId.isEmpty) {
         final storedFileId = await StorageService.getActiveFileId(
           widget.mesinName,
@@ -422,7 +374,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
           print('🔄 DETAIL: Using stored fileId: $fileId');
         }
       } else {
-        print('🔄 DETAIL: Using validated fileId: $fileId');
+        print('🔄 DETAIL: Using provided fileId: $fileId');
       }
 
       // Cek apakah fileId tersedia
