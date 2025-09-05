@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
 
 /// Service sederhana untuk mencegah bentrok editing form logsheet
@@ -53,7 +53,7 @@ class SimpleCollaborationService {
         'lastActivity': lastActivity.toIso8601String(),
       };
     } catch (e) {
-      print('❌ COLLABORATION: Error checking edit status: $e');
+      print('❌ COLLABORATION: Error  edit status: $e');
       return {'canEdit': true, 'message': 'Error, melanjutkan editing'};
     }
   }
@@ -79,11 +79,11 @@ class SimpleCollaborationService {
       });
 
       print(
-        '✅ COLLABORATION: Started editing session for $generatorName hour $hour',
+        '✅ COLLABORATION: Sesi editing dimulai for $generatorName hour $hour',
       );
       return true;
     } catch (e) {
-      print('❌ COLLABORATION: Error starting editing session: $e');
+      print('❌ COLLABORATION:  starting editing session: $e');
       return false;
     }
   }
@@ -103,7 +103,7 @@ class SimpleCollaborationService {
         'lastActivity': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('❌ COLLABORATION: Error updating activity: $e');
+      print('❌ COLLABORATION:  updating activity: $e');
     }
   }
 
@@ -121,11 +121,11 @@ class SimpleCollaborationService {
         '✅ COLLABORATION: Ended editing session for $generatorName hour $hour',
       );
     } catch (e) {
-      print('❌ COLLABORATION: Error ending editing session: $e');
+      print('❌ COLLABORATION:  ending editing session: $e');
     }
   }
 
-  /// Cleanup sessions lama (> 1 jam)
+  /// Bersihkanup sessions lama (> 1 jam)
   static Future<void> cleanupOldSessions() async {
     try {
       final oneHourAgo = DateTime.now().subtract(Duration(hours: 1));
@@ -140,10 +140,10 @@ class SimpleCollaborationService {
       }
 
       if (query.docs.isNotEmpty) {
-        print('🧹 COLLABORATION: Cleaned up ${query.docs.length} old sessions');
+        print('🧹 : Cleaned up ${query.docs.length} old sessions');
       }
     } catch (e) {
-      print('❌ COLLABORATION: Error cleaning up sessions: $e');
+      print('❌ COLLABORATION:  cleaning up sessions: $e');
     }
   }
 }

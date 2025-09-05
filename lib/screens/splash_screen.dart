@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../models/firebase_user_model.dart';
 import 'login_screen.dart';
@@ -20,18 +20,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkLoginStatus() async {
     try {
-      print('🔍 SPLASH: Checking login status...');
+      print('🔍 SPLASH:  login status...');
 
-      // Add delay untuk splash effect
+      // Tambah delay untuk splash effect
       await Future.delayed(const Duration(seconds: 2));
 
-      // Check login status
+      // Cek login status
       final FirebaseUserModel? user = await AuthService.getCurrentUser();
 
       if (!mounted) return;
 
       if (user != null) {
-        print('✅ SPLASH: Auto-login successful for ${user.username}');
+        print('✅ SPLASH: Auto-login ful for ${user.username}');
         // User sudah login, ke MainNavigationScreen dengan navbar
         Navigator.pushReplacement(
           context,
@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       }
     } catch (e) {
-      print('❌ SPLASH: Error checking login status: $e');
+      print('❌ SPLASH: Error  login status: $e');
       // Error, redirect ke login untuk safety
       if (mounted) {
         Navigator.pushReplacement(
@@ -106,13 +106,13 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 48),
 
-            // Loading Indicator
+            // Muating Indicator
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
             const SizedBox(height: 24),
 
-            // Loading Text
+            // Muating Text
             const Text(
               'Memuat aplikasi...',
               style: TextStyle(color: Colors.white70, fontSize: 14),

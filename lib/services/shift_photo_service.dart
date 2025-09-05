@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,7 +19,7 @@ class ShiftPhotoService {
   static const String SHIFT_SORE = 'sore'; // 15:00-23:00
   static const String SHIFT_MALAM = 'malam'; // 23:00-08:00
 
-  // Get current shift based on time
+  // Ambil current shift based on time
   String getCurrentShift() {
     final now = DateTime.now();
     final hour = now.hour;
@@ -33,7 +33,7 @@ class ShiftPhotoService {
     }
   }
 
-  // Get shift display name
+  // Ambil shift display name
   String getShiftDisplayName(String shift) {
     switch (shift) {
       case SHIFT_PAGI:
@@ -47,7 +47,7 @@ class ShiftPhotoService {
     }
   }
 
-  // Check if user has uploaded photo for current shift today
+  // Cek if user has uploaded photo for current shift today
   Future<bool> hasPhotoToday({String? specificShift}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -64,19 +64,19 @@ class ShiftPhotoService {
 
       return savedDate == todayString;
     } catch (e) {
-      print('❌ PHOTO: Error checking photo date: $e');
+      print('❌ PHOTO: Error  photo date: $e');
       return false;
     }
   }
 
-  // Get current shift photo URL
+  // Ambil current shift photo URL
   Future<String?> getCurrentPhotoUrl({String? specificShift}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentShift = specificShift ?? getCurrentShift();
       return prefs.getString('${_photoUrlKey}_$currentShift');
     } catch (e) {
-      print('❌ PHOTO: Error getting photo URL: $e');
+      print('❌ PHOTO:  getting photo URL: $e');
       return null;
     }
   }
@@ -100,7 +100,7 @@ class ShiftPhotoService {
 
       return photo;
     } catch (e) {
-      print('❌ PHOTO: Error taking photo: $e');
+      print('❌ PHOTO:  taking photo: $e');
       throw Exception('Gagal mengambil foto: $e');
     }
   }
@@ -117,7 +117,7 @@ class ShiftPhotoService {
         '📤 PHOTO: Starting upload for user: ${user.displayName}, shift: $currentShift',
       );
 
-      // Create unique filename with timestamp, user info, and shift
+      // Buat unique filename with timestamp, user info, and shift
       final now = DateTime.now();
       final dateString =
           '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
@@ -126,7 +126,7 @@ class ShiftPhotoService {
       final fileName =
           'shift_${currentShift}_${user.email}_${dateString}_${timeString}.jpg';
 
-      // Create reference to Firebase Storage
+      // Buat reference to Firebase Storage
       final ref = _storage.ref().child(_storageRef).child(fileName);
 
       // Upload file
@@ -145,19 +145,19 @@ class ShiftPhotoService {
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
-      print('✅ PHOTO: Upload successful, URL: $downloadUrl');
+      print('✅ PHOTO: Upload ful, URL: $downloadUrl');
 
-      // Save photo info locally for current shift
+      // Simpan photo info locally for current shift
       await _savePhotoInfo(downloadUrl, currentShift);
 
       return downloadUrl;
     } catch (e) {
-      print('❌ PHOTO: Upload failed: $e');
+      print('❌ PHOTO: Upload : $e');
       throw Exception('Gagal mengupload foto: $e');
     }
   }
 
-  // Save photo info to local storage for specific shift
+  // Simpan photo info to local storage for specific shift
   Future<void> _savePhotoInfo(String photoUrl, String shift) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -168,13 +168,13 @@ class ShiftPhotoService {
       await prefs.setString('${_photoUrlKey}_$shift', photoUrl);
       await prefs.setString('${_photoDateKey}_$shift', todayString);
 
-      print('💾 PHOTO: Photo info saved locally for shift: $shift');
+      print('💾 PHOTO: Photo  saved locally for shift: $shift');
     } catch (e) {
-      print('❌ PHOTO: Error saving photo info: $e');
+      print('❌ PHOTO: Error saving photo : $e');
     }
   }
 
-  // Clear today's photo for specific shift (for testing or if user wants to retake)
+  // Bersihkan today's photo for specific shift (for testing or if user wants to retake)
   Future<void> clearTodayPhoto({String? specificShift}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -183,11 +183,11 @@ class ShiftPhotoService {
       await prefs.remove('${_photoDateKey}_$currentShift');
       print('🧹 PHOTO: Today\'s photo info cleared for shift: $currentShift');
     } catch (e) {
-      print('❌ PHOTO: Error clearing photo info: $e');
+      print('❌ PHOTO: Error clearing photo : $e');
     }
   }
 
-  // Get all shift photos for current user (for settings page)
+  // Ambil all shift photos for current user (for settings page)
   Future<List<Map<String, dynamic>>> getUserShiftPhotos() async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -204,7 +204,7 @@ class ShiftPhotoService {
       List<Map<String, dynamic>> userPhotos = [];
 
       for (final item in listResult.items) {
-        // Check if this photo belongs to current user
+        // Cek if this photo belongs to current user
         if (item.name.contains('shift_${currentUser.email}_')) {
           try {
             final metadata = await item.getMetadata();
@@ -217,7 +217,7 @@ class ShiftPhotoService {
               'size': metadata.size,
             });
           } catch (e) {
-            print('❌ PHOTO: Error getting photo info for ${item.name}: $e');
+            print('❌ PHOTO: Error getting photo  for ${item.name}: $e');
           }
         }
       }
@@ -228,12 +228,12 @@ class ShiftPhotoService {
       print('📋 PHOTO: Found ${userPhotos.length} photos for user');
       return userPhotos;
     } catch (e) {
-      print('❌ PHOTO: Error getting user photos: $e');
+      print('❌ PHOTO:  getting user photos: $e');
       return [];
     }
   }
 
-  // Delete specific photo
+  // Hapus specific photo
   Future<bool> deletePhoto(String photoName) async {
     try {
       final ref = _storage.ref().child(_storageRef).child(photoName);
@@ -241,7 +241,7 @@ class ShiftPhotoService {
       print('🗑️ PHOTO: Deleted photo: $photoName');
       return true;
     } catch (e) {
-      print('❌ PHOTO: Error deleting photo: $e');
+      print('❌ PHOTO:  deleting photo: $e');
       return false;
     }
   }

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'google_drive_service.dart';
 import 'rest_api_service.dart';
@@ -37,7 +37,7 @@ class HistoricalLogsheetService {
         );
         print('💾 Saved to SQLite: $generatorName');
       } catch (e) {
-        print('❌ Error saving to SQLite: $e');
+        print('❌  saving to SQLite: $e');
       }
 
       // PRIORITAS 2: Backup ke SharedPreferences
@@ -51,10 +51,10 @@ class HistoricalLogsheetService {
         await prefs.setString(fileIdKey, fileId);
         print('💾 Backup saved to SharedPreferences: $historyKey');
       } catch (e) {
-        print('❌ Error saving to SharedPreferences: $e');
+        print('❌  saving to SharedPreferences: $e');
       }
     } catch (e) {
-      print('❌ Error saving to history: $e');
+      print('❌  saving to history: $e');
     }
   }
 
@@ -74,7 +74,7 @@ class HistoricalLogsheetService {
       final localData = prefs.getString(historyKey);
       final fileId = prefs.getString(fileIdKey);
 
-      print('🔍 Checking today data for $generatorName:');
+      print('🔍  today data for $generatorName:');
       print('   Date key: $dateKey');
       print('   Local data exists: ${localData != null}');
       print('   File ID exists: ${fileId != null}');
@@ -102,7 +102,7 @@ class HistoricalLogsheetService {
         'driveFileId': driveFileId,
       };
     } catch (e) {
-      print('Error checking today data: $e');
+      print('Error  today data: $e');
       return {
         'hasLocalData': false,
         'hasFileId': false,
@@ -124,10 +124,11 @@ class HistoricalLogsheetService {
 
       // PRIORITAS 1: Ambil data dari Firestore (real-time, multi-user)
       print('Step 1: Fetching data from Firestore (real-time, multi-user)...');
-      final firestoreData = await fhs.FirestoreHistoricalService.getDailySummary(
-        generatorName,
-        daysBack: daysBack,
-      );
+      final firestoreData =
+          await fhs.FirestoreHistoricalService.getDailySummary(
+            generatorName,
+            daysBack: daysBack,
+          );
 
       print('✓ Firestore data: ${firestoreData.length} daily summaries');
 
@@ -219,7 +220,7 @@ class HistoricalLogsheetService {
       );
       return allData;
     } catch (e) {
-      print('Error getting historical data: $e');
+      print(' getting historical data: $e');
       // Fallback ke data lokal jika ada error
       return await _getLocalHistoricalData(generatorName, daysBack: daysBack);
     }
@@ -267,7 +268,7 @@ class HistoricalLogsheetService {
       print('✅ Total local historical data: ${historicalData.length} entries');
       return historicalData;
     } catch (e) {
-      print('❌ Error getting local historical data: $e');
+      print('❌  getting local historical data: $e');
       return [];
     }
   }
@@ -293,11 +294,11 @@ class HistoricalLogsheetService {
         '🗄️ SQLite query returned ${results.length} logsheet records for $generatorName',
       );
 
-      // Convert data from SQLite format to historical format
+      // Ubah data from SQLite format to historical format
       final List<Map<String, dynamic>> historicalData = [];
 
       for (final record in results) {
-        // Convert SQLite record to historical format
+        // Ubah SQLite record to historical format
         final historicalRecord = {
           'savedDate': record['timestamp'],
           'generatorName': record['generator_name'],
@@ -349,7 +350,7 @@ class HistoricalLogsheetService {
 
       return historicalData;
     } catch (e) {
-      print('❌ Error getting SQLite historical data: $e');
+      print('❌  getting SQLite historical data: $e');
       return [];
     }
   }
@@ -392,7 +393,7 @@ class HistoricalLogsheetService {
 
       return historicalData;
     } catch (e) {
-      print('❌ Error getting SharedPreferences historical data: $e');
+      print('❌  getting SharedPreferences historical data: $e');
       return [];
     }
   }
@@ -412,7 +413,7 @@ class HistoricalLogsheetService {
         return [data];
       }
     } catch (e) {
-      print('Error getting local data for $dateKey: $e');
+      print(' getting local data for $dateKey: $e');
     }
     return [];
   }
@@ -437,7 +438,7 @@ class HistoricalLogsheetService {
       if (sqliteData.isNotEmpty) {
         print('✅ Found ${sqliteData.length} records from SQLite');
 
-        // Convert SQLite format to standard format
+        // Ubah SQLite format to standard format
         final convertedData = sqliteData
             .map(
               (record) => {
@@ -516,7 +517,7 @@ class HistoricalLogsheetService {
           }
         }
       } catch (e) {
-        print('❌ Error getting Google Drive data: $e');
+        print('❌  getting Google Drive data: $e');
       }
 
       // PRIORITAS 3: Fallback ke SharedPreferences
@@ -536,7 +537,7 @@ class HistoricalLogsheetService {
       print('❌ No data found for the specified date');
       return [];
     } catch (e) {
-      print('❌ Error getting data for date: $e');
+      print('❌  getting data for date: $e');
       return [];
     }
   }
@@ -562,7 +563,7 @@ class HistoricalLogsheetService {
 
       return filteredData;
     } catch (e) {
-      print('Error getting sheet data for ${targetDate.toIso8601String()}: $e');
+      print(' getting sheet data for ${targetDate.toIso8601String()}: $e');
       return [];
     }
   }
@@ -606,7 +607,7 @@ class HistoricalLogsheetService {
 
       return summaries;
     } catch (e) {
-      print('Error getting daily summary: $e');
+      print(' getting daily summary: $e');
       return [];
     }
   }
@@ -655,7 +656,7 @@ class HistoricalLogsheetService {
           fileId = data['fileId'].toString();
         }
       }
-      
+
       // Prioritas tinggi: Cek apakah ada fileId yang BUKAN dari Firestore
       // untuk memastikan download bisa bekerja dengan Google Drive fileId asli
       final currentFileId = data['fileId']?.toString() ?? '';
@@ -663,7 +664,8 @@ class HistoricalLogsheetService {
         // Ini adalah Google Drive fileId asli, prioritaskan untuk download
         if (fileId == null || fileId.startsWith('firestore_')) {
           fileId = currentFileId;
-          hasRealData = true; // Mark sebagai real data karena ada Google Drive fileId
+          hasRealData =
+              true; // Mark sebagai real data karena ada Google Drive fileId
         }
       }
 
@@ -678,13 +680,17 @@ class HistoricalLogsheetService {
           if (totalKwhValue > totalKwh) {
             totalKwh = totalKwhValue;
           }
-          print('✅ Found valid totalKwh: $totalKwhValue (current max: $totalKwh)');
+          print(
+            '✅ Found valid totalKwh: $totalKwhValue (current max: $totalKwh)',
+          );
         } else {
-          print('⚠️ Skipping unrealistic totalKwh: $totalKwhValue (too high, likely test data)');
+          print(
+            '⚠️ Skipping unrealistic totalKwh: $totalKwhValue (too high, likely test data)',
+          );
         }
       }
 
-      // Total BBM - akumulasi nilai terbesar dalam hari (nilai kumulatif terakhir)  
+      // Total BBM - akumulasi nilai terbesar dalam hari (nilai kumulatif terakhir)
       String? bbmStr =
           data['totalBbm']?.toString() ?? data['bbmTotal']?.toString() ?? '0';
       final totalBbmValue = double.tryParse(bbmStr.replaceAll(',', '.'));
@@ -695,9 +701,13 @@ class HistoricalLogsheetService {
           if (totalBbmValue > totalBbm) {
             totalBbm = totalBbmValue;
           }
-          print('✅ Found valid totalBbm: $totalBbmValue (current max: $totalBbm)');
+          print(
+            '✅ Found valid totalBbm: $totalBbmValue (current max: $totalBbm)',
+          );
         } else {
-          print('⚠️ Skipping unrealistic totalBbm: $totalBbmValue (too high, likely test data)');
+          print(
+            '⚠️ Skipping unrealistic totalBbm: $totalBbmValue (too high, likely test data)',
+          );
         }
       }
 
@@ -711,7 +721,9 @@ class HistoricalLogsheetService {
           validSfcCount++;
           print('✅ Found valid SFC: $sfcValue');
         } else {
-          print('⚠️ Skipping unrealistic SFC: $sfcValue (too high, likely test data)');
+          print(
+            '⚠️ Skipping unrealistic SFC: $sfcValue (too high, likely test data)',
+          );
         }
       }
     }
@@ -799,7 +811,7 @@ class HistoricalLogsheetService {
 
       print('Cleared history for $generatorName');
     } catch (e) {
-      print('Error clearing history: $e');
+      print(' clearing history: $e');
     }
   }
 
@@ -808,7 +820,7 @@ class HistoricalLogsheetService {
     try {
       return await GoogleDriveService.getFolderStats();
     } catch (e) {
-      print('Error getting folder statistics: $e');
+      print(' getting folder statistics: $e');
       return {
         'totalFiles': 0,
         'totalSize': 0,
@@ -892,7 +904,7 @@ class HistoricalLogsheetService {
       print('✅ REST API: Retrieved ${allData.length} total historical entries');
       return allData;
     } catch (e) {
-      print('❌ Error getting historical data using REST API: $e');
+      print('❌  getting historical data using REST API: $e');
       return [];
     }
   }
@@ -911,11 +923,11 @@ class HistoricalLogsheetService {
         print('✅ Analytics retrieved: ${summary['totalLogsheets']} logsheets');
         return summary;
       } else {
-        print('❌ Failed to get analytics summary');
+        print('❌  to get analytics summary');
         return {};
       }
     } catch (e) {
-      print('❌ Error getting analytics summary: $e');
+      print('❌  getting analytics summary: $e');
       return {};
     }
   }
@@ -980,7 +992,7 @@ class HistoricalLogsheetService {
         return false;
       }
     } catch (e) {
-      print('❌ Error testing REST API connection: $e');
+      print('❌  testing REST API connection: $e');
       return false;
     }
   }

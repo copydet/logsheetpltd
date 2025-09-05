@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 /// ============================================================================
 /// LOGSHEET CACHE MODEL
@@ -35,7 +35,7 @@ class LogsheetCache {
       try {
         parsedDataJson = json.decode(map['data_json'] as String);
       } catch (e) {
-        print('Error parsing data_json: $e');
+        print(' parsing data_json: $e');
         parsedDataJson = null;
       }
     }
@@ -82,13 +82,13 @@ class LogsheetCache {
     return map;
   }
 
-  /// Check if cache is expired
+  /// Cek if cache is expired
   bool get isExpired {
     if (expiresAt == null) return false;
     return DateTime.now().isAfter(expiresAt!);
   }
 
-  /// Check if cache is valid
+  /// Cek if cache is valid
   bool get isValid => !isExpired && hasData;
 
   LogsheetCache copyWith({
@@ -122,7 +122,7 @@ class LogsheetCache {
 }
 
 /// ============================================================================
-/// SETTINGS MODEL
+/// AturTINGS MODEL
 /// ============================================================================
 
 class Setting {

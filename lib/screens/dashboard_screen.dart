@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../app_exports.dart';
 import '../services/sync_manager.dart';
 import '../services/generator_status_sync_service.dart';
@@ -24,25 +24,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadStoredFileIds(); // This now includes loading generator statuses
     _initializeRealtimeData();
-    _setupGeneratorStatusSync(); // Setup real-time sync untuk status generator
+    _setupGeneratorStatusSync(); // Pengaturan real-time sync untuk status generator
   }
 
   @override
   void dispose() {
     _realtimeListener?.cancel();
-    GeneratorStatusSyncService.cancelRealtimeListener(); // Cancel generator status listener
+    GeneratorStatusSyncService.cancelRealtimeListener(); // Batal generator status listener
     super.dispose();
   }
 
-  // Initialize real-time data from Firestore
+  // Inisialisasi real-time data from Firestore
   Future<void> _initializeRealtimeData() async {
     try {
       print('🔄 DASHBOARD: Initializing Firestore real-time data...');
 
-      // Get generator names
+      // Ambil generator names
       final generatorNames = generators.map((g) => g.name).toList();
 
-      // Check if Firestore has data
+      // Cek if Firestore has data
       final firestoreData =
           await FirestoreRealtimeService.getLatestDataForDashboard(
             generatorNames,
@@ -57,7 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         print('✅ DASHBOARD: Using Firestore data for real-time updates');
 
-        // Setup real-time listener
+        // Pengaturan real-time listener
         _realtimeListener = FirestoreRealtimeService.listenToRealtimeUpdates(
           generatorNames,
           (updates) {
@@ -78,22 +78,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-      print('❌ DASHBOARD: Error initializing Firestore data: $e');
+      print('❌ DASHBOARD:  initializing Firestore data: $e');
       setState(() {
         _useFirestoreData = false;
       });
     }
   }
 
-  // Setup real-time sync untuk generator status manual
+  // Pengaturan real-time sync untuk generator status manual
   Future<void> _setupGeneratorStatusSync() async {
     try {
       print('🔄 DASHBOARD: Setting up generator status sync...');
 
-      // Initialize service
+      // Inisialisasi service
       await GeneratorStatusSyncService.initialize();
 
-      // Get generator names
+      // Ambil generator names
       final generatorNames = generators.map((g) => g.name).toList();
 
       // Download latest statuses from other devices
@@ -123,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         print('✅ DASHBOARD: Updated generator statuses from cloud');
       }
 
-      // Setup real-time listener for status changes from other devices
+      // Pengaturan real-time listener for status changes from other devices
       GeneratorStatusSyncService.setupRealtimeListener(generatorNames, (
         generatorName,
         isActive,
@@ -152,7 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       print('✅ DASHBOARD: Generator status sync setup completed');
     } catch (e) {
-      print('❌ DASHBOARD: Error setting up generator status sync: $e');
+      print('❌ DASHBOARD:  setting up generator status sync: $e');
     }
   }
 
@@ -173,7 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           print('   No health data received');
         }
       } catch (e) {
-        print('❌ Health Check Error: $e');
+        print('❌ Health Check : $e');
       }
 
       // Test Generators
@@ -187,38 +187,208 @@ class _DashboardScreenState extends State<DashboardScreen> {
           '✅ Generators: ${generatorsResponse['success']} - Found $generatorCount generators',
         );
       } catch (e) {
-        print('❌ Generators Error: $e');
+        print('❌ Generators : $e');
       }
 
       print('✅ REST API test completed');
     } catch (e) {
-      print('❌ REST API Test Error: $e');
+      print('❌ REST API Test : $e');
     }
-  } // Load fileId yang tersimpan dari storage dan data terakhir
+  } // Muat fileId yang tersimpan dari storage dan data terakhir
 
   void _loadStoredFileIds() async {
     print('🔄 DASHBOARD: Loading stored file IDs with consistency check...');
-    
-    // Load dan pastikan GeneratorDataManager ter-update
+
+    // Muat dan pastikan GeneratorDataManager ter-update
     await GeneratorDataManager.loadGeneratorData();
-    
-    print('🔧 DASHBOARD DEBUG: Processing ${generators.length} generators...');
+
+    print('🔧 DASHBOARD : Processing ${generators.length} generators...');
     for (int i = 0; i < generators.length; i++) {
       final generatorName = generators[i].name;
       print('📱 DASHBOARD: Processing generator $i: $generatorName');
-      print('📱 DASHBOARD: Checking SQLite for $generatorName...');
+      print('📱 DASHBOARD:  SQLite for $generatorName...');
 
-      // PRIORITAS 1: SQLite database (offline-first)
+      // PRIORITAS 1: Firestore (real-time sync priority)
+      // Cek Firestore data terlebih dahulu untuk sinkronisasi real-time
+      Map<String, dynamic>? firestoreData;
+      try {
+        final firestoreResult =
+            await FirestoreRealtimeService.getLatestDataForDashboard([
+              generatorName,
+            ]);
+        if (firestoreResult.containsKey(generatorName)) {
+          final generatorFirestoreData = firestoreResult[generatorName]!;
+          if (generatorFirestoreData['hasData'] == true) {
+            firestoreData = generatorFirestoreData;
+            print('✅ DASHBOARD: Found Firestore data for $generatorName');
+          }
+        }
+      } catch (e) {
+        print(
+          '⚠️ DASHBOARD: Firestore data not available for $generatorName: $e',
+        );
+        firestoreData = null;
+      }
+
+      // PRIORITAS 2: Google Sheets API (sumber data utama dari spreadsheet)
+      Map<String, dynamic>? sheetsData;
+      try {
+        final currentFileId = await StorageService.getActiveFileId(
+          generatorName,
+        );
+        if (currentFileId != null &&
+            currentFileId.isNotEmpty &&
+            !currentFileId.startsWith('EMPTY')) {
+          final currentHour = DateTime.now().hour;
+          final sheetsResult = await SheetsApiService.getHourlyData(
+            currentFileId,
+            currentHour,
+          );
+          if (sheetsResult['success'] == true && sheetsResult['data'] != null) {
+            final hourlyData =
+                sheetsResult['data']['hourlyData'] as Map<String, dynamic>;
+            sheetsData = {
+              'fileId': currentFileId,
+              'waterTemp': hourlyData['waterTemp']?.toString() ?? '0',
+              'oilPressure': hourlyData['oilPressure']?.toString() ?? '0',
+              'jamOperasi': hourlyData['jamOperasi']?.toString() ?? '0',
+              'source': 'sheets',
+              'timestamp': DateTime.now().toIso8601String(),
+            };
+            print(
+              '✅ DASHBOARD: Found Google Sheets data for $generatorName (temp: ${sheetsData['waterTemp']}°C)',
+            );
+          }
+        }
+      } catch (e) {
+        print(
+          '⚠️ DASHBOARD: Google Sheets data not available for $generatorName: $e',
+        );
+        sheetsData = null;
+      }
+
+      // PRIORITAS 3: SQLite database (offline fallback)
       final dbData = await _getLatestDataFromSQLite(generatorName);
 
-      if (dbData != null && dbData.isNotEmpty) {
+      if (firestoreData != null) {
+        // GUNAKAN DATA FIRESTORE (prioritas tertinggi untuk real-time sync)
+        final consistentFileId =
+            firestoreData['fileId']?.toString() ??
+            await StorageService.getActiveFileId(generatorName) ??
+            '';
+
+        print(
+          '🔄 DASHBOARD: Using Firestore data for $generatorName with fileId: ${consistentFileId.length > 15 ? consistentFileId.substring(0, 15) : consistentFileId}...',
+        );
+
+        // Muat saved generator status from user preference
+        bool userSetActive = false;
+        try {
+          userSetActive = await DatabaseStorageService.getGeneratorStatus(
+            generatorName,
+          );
+          print(
+            '✅ DASHBOARD: Loaded user status from SQLite for $generatorName: $userSetActive',
+          );
+        } catch (e) {
+          final savedStatus = await StorageService.getGeneratorStatus(
+            generatorName,
+          );
+          userSetActive = savedStatus ?? false;
+          print(
+            '⚠️ DASHBOARD: Using SharedPreferences status for $generatorName: $userSetActive',
+          );
+        }
+
+        setState(() {
+          generators[i] = GeneratorData(
+            id: generators[i].id,
+            name: generators[i].name,
+            isActive: userSetActive,
+            temperature:
+                double.tryParse(
+                  firestoreData?['waterTemp']?.toString() ?? '0',
+                ) ??
+                generators[i].temperature,
+            pressure:
+                double.tryParse(
+                  firestoreData?['oilPressure']?.toString() ?? '0',
+                ) ??
+                generators[i].pressure,
+            operationHours:
+                int.tryParse(firestoreData?['jamOperasi']?.toString() ?? '0') ??
+                generators[i].operationHours,
+            fileId: consistentFileId,
+          );
+        });
+        print(
+          '✅ DASHBOARD: Updated $generatorName with Firestore data (temp: ${generators[i].temperature}°C, pressure: ${generators[i].pressure} Bar, hours: ${generators[i].operationHours})',
+        );
+      } else if (sheetsData != null) {
+        // GUNAKAN DATA GOOGLE SHEETS (prioritas kedua untuk data spreadsheet terbaru)
+        final consistentFileId =
+            sheetsData['fileId']?.toString() ??
+            await StorageService.getActiveFileId(generatorName) ??
+            '';
+
+        print(
+          '🔄 DASHBOARD: Using Google Sheets data for $generatorName with fileId: ${consistentFileId.length > 15 ? consistentFileId.substring(0, 15) : consistentFileId}...',
+        );
+
+        // Muat saved generator status from user preference
+        bool userSetActive = false;
+        try {
+          userSetActive = await DatabaseStorageService.getGeneratorStatus(
+            generatorName,
+          );
+          print(
+            '✅ DASHBOARD: Loaded user status from SQLite for $generatorName: $userSetActive',
+          );
+        } catch (e) {
+          final savedStatus = await StorageService.getGeneratorStatus(
+            generatorName,
+          );
+          userSetActive = savedStatus ?? false;
+          print(
+            '⚠️ DASHBOARD: Using SharedPreferences status for $generatorName: $userSetActive',
+          );
+        }
+
+        setState(() {
+          generators[i] = GeneratorData(
+            id: generators[i].id,
+            name: generators[i].name,
+            isActive: userSetActive,
+            temperature:
+                double.tryParse(sheetsData?['waterTemp']?.toString() ?? '0') ??
+                generators[i].temperature,
+            pressure:
+                double.tryParse(
+                  sheetsData?['oilPressure']?.toString() ?? '0',
+                ) ??
+                generators[i].pressure,
+            operationHours:
+                int.tryParse(sheetsData?['jamOperasi']?.toString() ?? '0') ??
+                generators[i].operationHours,
+            fileId: consistentFileId,
+          );
+        });
+        print(
+          '✅ DASHBOARD: Updated $generatorName with Google Sheets data (temp: ${generators[i].temperature}°C, pressure: ${generators[i].pressure} Bar, hours: ${generators[i].operationHours})',
+        );
+      } else if (dbData != null && dbData.isNotEmpty) {
+        // FALLBACK KE SQLite DATABASE
         // Dapatkan file ID yang konsisten dari storage
-        final consistentFileId = await StorageService.getActiveFileId(generatorName);
+        final consistentFileId = await StorageService.getActiveFileId(
+          generatorName,
+        );
         String validatedFileId = consistentFileId ?? '';
 
-        print('✅ DASHBOARD: Using consistent fileId for $generatorName: ${validatedFileId.isEmpty ? "EMPTY" : validatedFileId.substring(0, 15)}...');
+        print(
+          '✅ DASHBOARD: Using consistent fileId for $generatorName: ${validatedFileId.isEmpty ? "EMPTY" : validatedFileId.substring(0, 15)}...',
+        );
 
-        // Load saved generator status FIRST to preserve user settings
+        // Muat saved generator status FIRST to preserve user settings
         // Priority: SQLite database first, then SharedPreferences as fallback
         bool userSetActive = false;
 
@@ -277,7 +447,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             : null;
 
         if (firestoreData != null && firestoreData['hasData'] == true) {
-          // Load saved generator status to preserve user settings
+          // Muat saved generator status to preserve user settings
           // Priority: SQLite database first, then SharedPreferences as fallback
           bool userSetActive = false;
 
@@ -335,7 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         } else {
           // PRIORITAS 3: Generator belum memiliki data (Mitsubishi #3, #4, etc.)
-          // Load saved generator status to preserve user manual settings
+          // Muat saved generator status to preserve user manual settings
           final storedFileId = await StorageService.getActiveFileId(
             generatorName,
           );
@@ -403,7 +573,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final dbService = DatabaseService();
 
       // 🔧 CRITICAL FIX: Juga cek tabel temperature_data untuk konsistensi dengan Chart Widget
-      print('📱 DASHBOARD: Checking SQLite for $generatorName...');
+      print('📱 DASHBOARD:  SQLite for $generatorName...');
 
       // PRIORITAS 1: Cek tabel logsheets untuk data lengkap
       final history = await dbService.getLogsheetHistory(
@@ -561,13 +731,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         }
       } catch (e) {
-        print('📱 DASHBOARD: Error checking temperature_data: $e');
+        print('📱 DASHBOARD: Error  temperature_data: $e');
       }
 
       print('📱 DASHBOARD: No SQLite data found for $generatorName today');
       return null;
     } catch (e) {
-      print('❌ DASHBOARD: Error loading SQLite data for $generatorName: $e');
+      print('❌ DASHBOARD:  loading SQLite data for $generatorName: $e');
       return null;
     }
   }
@@ -696,7 +866,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } catch (e) {
-      print('❌ DASHBOARD: Failed to sync generator status: $e');
+      print('❌ DASHBOARD:  to sync generator status: $e');
     }
 
     // 🚀 IMMEDIATE SYNC: Trigger upload after generator status change
@@ -735,10 +905,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           '✅ IMMEDIATE SYNC: Generator status synced to Firestore successfully',
         );
       } else {
-        print('⚠️ IMMEDIATE SYNC: Upload failed or no data to sync');
+        print('⚠️ IMMEDIATE SYNC: Upload  or no data to sync');
       }
     } catch (e) {
-      print('❌ IMMEDIATE SYNC: Error during immediate sync: $e');
+      print('❌ IMMEDIATE SYNC:  during immediate sync: $e');
       // Don't show error to user - sync failure shouldn't block UI
     }
   }

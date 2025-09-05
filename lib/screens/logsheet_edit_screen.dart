@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../app_exports.dart';
 
@@ -212,7 +212,7 @@ class _LogsheetEditScreenState extends State<LogsheetEditScreen> {
       };
 
       // Debug log untuk memastikan tanggal dan jam benar pada edit
-      print('🔍 EDIT TIMESTAMP DEBUG: Updating data with:');
+      print('🔍 EDIT TIMESTAMP : Updating data with:');
       print('   📅 tanggal: ${logsheetData['tanggal']}');
       print('   🕐 jam: ${logsheetData['jam']}');
       print('   📊 generatorName: ${logsheetData['generatorName']}');
@@ -245,10 +245,10 @@ class _LogsheetEditScreenState extends State<LogsheetEditScreen> {
         ),
       );
 
-      // Return to previous screen after 2 seconds
+      // Kembalikan to previous screen after 2 seconds
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
-          Navigator.pop(context, {'updated': true}); // Return updated status
+          Navigator.pop(context, {'updated': true}); // Kembalikan updated status
         }
       });
     } catch (e) {
@@ -276,7 +276,7 @@ class _LogsheetEditScreenState extends State<LogsheetEditScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Return to dashboard with no update indication
+        // Kembalikan to dashboard with no update indication
         Navigator.pop(context, {'updated': false});
         return false;
       },

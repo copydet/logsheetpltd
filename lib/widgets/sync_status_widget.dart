@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/sync_manager.dart';
 
 class SyncStatusWidget extends StatefulWidget {

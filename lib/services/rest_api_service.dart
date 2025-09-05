@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Service untuk mengakses REST API endpoints Firebase Functions
@@ -54,7 +54,7 @@ class RestApiService {
         throw Exception('Failed to get generators: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error getting generators: $e');
+      print('❌  getting generators: $e');
       rethrow;
     }
   }
@@ -94,7 +94,7 @@ class RestApiService {
         );
       }
     } catch (e) {
-      print('❌ Error getting generator details: $e');
+      print('❌  getting generator details: $e');
       rethrow;
     }
   }
@@ -139,7 +139,7 @@ class RestApiService {
         throw Exception('Failed to create logsheet: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error creating logsheet: $e');
+      print('❌  creating logsheet: $e');
       rethrow;
     }
   }
@@ -174,7 +174,7 @@ class RestApiService {
         throw Exception('Failed to get logsheet: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error getting logsheet: $e');
+      print('❌  getting logsheet: $e');
       rethrow;
     }
   }
@@ -211,7 +211,7 @@ class RestApiService {
         );
       }
     } catch (e) {
-      print('❌ Error replacing logsheet data: $e');
+      print('❌  replacing logsheet data: $e');
       rethrow;
     }
   }
@@ -246,7 +246,7 @@ class RestApiService {
             data['data']['updatedCells'] != null) {
           print('✅ Updated ${data['data']['updatedCells']} cells');
         } else {
-          print('✅ Update successful (cells count not available)');
+          print('✅ Update ful (cells count not available)');
         }
         return data;
       } else if (response.statusCode == 400) {
@@ -258,7 +258,7 @@ class RestApiService {
         );
       }
     } catch (e) {
-      print('❌ Error updating logsheet data: $e');
+      print('❌  updating logsheet data: $e');
       rethrow;
     }
   }
@@ -287,7 +287,7 @@ class RestApiService {
         throw Exception('Failed to delete logsheet: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error deleting logsheet: $e');
+      print('❌  deleting logsheet: $e');
       rethrow;
     }
   }
@@ -309,7 +309,7 @@ class RestApiService {
         throw Exception('Failed to restore logsheet: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error restoring logsheet: $e');
+      print('❌  restoring logsheet: $e');
       rethrow;
     }
   }
@@ -361,7 +361,7 @@ class RestApiService {
         throw Exception('Failed to get analytics: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error getting analytics: $e');
+      print('❌  getting analytics: $e');
       rethrow;
     }
   }
@@ -408,7 +408,7 @@ class RestApiService {
         throw Exception('Health check failed: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error in health check: $e');
+      print('❌  in health check: $e');
       rethrow;
     }
   }
@@ -442,7 +442,7 @@ class RestApiService {
         throw Exception('Failed to search files: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error searching files: $e');
+      print('❌  searching files: $e');
       rethrow;
     }
   }
@@ -464,7 +464,7 @@ class RestApiService {
         throw Exception('Failed to list files: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error listing files: $e');
+      print('❌  listing files: $e');
       rethrow;
     }
   }
@@ -500,7 +500,7 @@ class RestApiService {
         throw Exception('Failed to find file: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error finding file: $e');
+      print('❌  finding file: $e');
       rethrow;
     }
   }
@@ -510,7 +510,7 @@ class RestApiService {
     try {
       final uri = Uri.parse('$_baseUrl/file-info/$fileId');
 
-      print('ℹ️ GET /file-info/$fileId');
+      print('ℹ️ GET /file-/$fileId');
 
       final response = await http.get(uri, headers: _headers);
 
@@ -524,7 +524,7 @@ class RestApiService {
         throw Exception('Failed to get file info: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error getting file info: $e');
+      print('❌ Error getting file : $e');
       rethrow;
     }
   }
@@ -546,7 +546,7 @@ class RestApiService {
         throw Exception('Failed to get folder stats: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error getting folder stats: $e');
+      print('❌  getting folder stats: $e');
       rethrow;
     }
   }

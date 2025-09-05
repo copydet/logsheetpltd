@@ -1,4 +1,4 @@
-import 'database_service.dart';
+﻿import 'database_service.dart';
 import '../models/database/cache_model.dart';
 import '../models/database/generator_model.dart';
 
@@ -16,7 +16,7 @@ class DatabaseStorageService {
   // GENERATOR MANAGEMENT
   // ========================================================================
 
-  /// Set generator status (active/inactive)
+  /// Atur generator status (active/inactive)
   static Future<bool> setGeneratorStatus(
     String generatorName,
     bool isActive,
@@ -24,7 +24,7 @@ class DatabaseStorageService {
     try {
       final db = await _dbService.database;
 
-      // Check if generator exists
+      // Cek if generator exists
       final existing = await db.query(
         'generators',
         where: 'name = ?',
@@ -49,7 +49,7 @@ class DatabaseStorageService {
         );
         return updated > 0;
       } else {
-        // Create new generator
+        // Buat new generator
         final generator = Generator(name: generatorName, isActive: isActive);
 
         final id = await db.insert('generators', generator.toMap());
@@ -59,12 +59,12 @@ class DatabaseStorageService {
         return id > 0;
       }
     } catch (e) {
-      print('❌ STORAGE: Error setting generator status: $e');
+      print('❌ STORAGE:  setting generator status: $e');
       return false;
     }
   }
 
-  /// Get generator status
+  /// Ambil generator status
   static Future<bool> getGeneratorStatus(String generatorName) async {
     try {
       final db = await _dbService.database;
@@ -82,12 +82,12 @@ class DatabaseStorageService {
 
       return false; // Default to inactive if not found
     } catch (e) {
-      print('❌ STORAGE: Error getting generator status: $e');
+      print('❌ STORAGE:  getting generator status: $e');
       return false;
     }
   }
 
-  /// Set active file ID untuk generator
+  /// Atur active file ID untuk generator
   static Future<bool> setActiveFileId(
     String generatorName,
     String fileId,
@@ -95,7 +95,7 @@ class DatabaseStorageService {
     try {
       final db = await _dbService.database;
 
-      // Check if generator exists
+      // Cek if generator exists
       final existing = await db.query(
         'generators',
         where: 'name = ?',
@@ -118,7 +118,7 @@ class DatabaseStorageService {
         print('✅ STORAGE: Active file ID for $generatorName set to $fileId');
         return updated > 0;
       } else {
-        // Create new generator with file ID
+        // Buat new generator with file ID
         final generator = Generator(name: generatorName, activeFileId: fileId);
 
         final id = await db.insert('generators', generator.toMap());
@@ -128,12 +128,12 @@ class DatabaseStorageService {
         return id > 0;
       }
     } catch (e) {
-      print('❌ STORAGE: Error setting active file ID: $e');
+      print('❌ STORAGE:  setting active file ID: $e');
       return false;
     }
   }
 
-  /// Get active file ID untuk generator
+  /// Ambil active file ID untuk generator
   static Future<String?> getActiveFileId(String generatorName) async {
     try {
       final db = await _dbService.database;
@@ -151,12 +151,12 @@ class DatabaseStorageService {
 
       return null;
     } catch (e) {
-      print('❌ STORAGE: Error getting active file ID: $e');
+      print('❌ STORAGE:  getting active file ID: $e');
       return null;
     }
   }
 
-  /// Get all generators
+  /// Ambil all generators
   static Future<List<Map<String, dynamic>>> getAllGenerators() async {
     try {
       final db = await _dbService.database;
@@ -171,7 +171,7 @@ class DatabaseStorageService {
         };
       }).toList();
     } catch (e) {
-      print('❌ STORAGE: Error getting all generators: $e');
+      print('❌ STORAGE:  getting all generators: $e');
       return [];
     }
   }
@@ -180,7 +180,7 @@ class DatabaseStorageService {
   // LOGSHEET CACHE MANAGEMENT
   // ========================================================================
 
-  /// Set cache data untuk logsheet
+  /// Atur cache data untuk logsheet
   static Future<bool> setCacheData(
     String fileId,
     String generatorName,
@@ -209,7 +209,7 @@ class DatabaseStorageService {
 
       final db = await _dbService.database;
 
-      // Check if cache already exists
+      // Cek if cache already exists
       final existing = await db.query(
         'logsheet_cache',
         where: 'file_id = ? AND generator_name = ? AND hour = ? AND date = ?',
@@ -235,12 +235,12 @@ class DatabaseStorageService {
         return id > 0;
       }
     } catch (e) {
-      print('❌ STORAGE: Error setting cache data: $e');
+      print('❌ STORAGE:  setting cache data: $e');
       return false;
     }
   }
 
-  /// Get cache data untuk logsheet
+  /// Ambil cache data untuk logsheet
   static Future<Map<String, dynamic>?> getCacheData(
     String fileId,
     String generatorName,
@@ -260,10 +260,10 @@ class DatabaseStorageService {
 
       final cache = LogsheetCache.fromMap(result.first);
 
-      // Check if cache is expired
+      // Cek if cache is expired
       if (cache.expiresAt != null &&
           cache.expiresAt!.isBefore(DateTime.now())) {
-        // Delete expired cache
+        // Hapus expired cache
         await db.delete(
           'logsheet_cache',
           where: 'file_id = ? AND generator_name = ? AND hour = ? AND date = ?',
@@ -287,12 +287,12 @@ class DatabaseStorageService {
         'expiresAt': cache.expiresAt,
       };
     } catch (e) {
-      print('❌ STORAGE: Error getting cache data: $e');
+      print('❌ STORAGE:  getting cache data: $e');
       return null;
     }
   }
 
-  /// Check if logsheet has data (from cache)
+  /// Cek if logsheet has data (from cache)
   static Future<bool> hasLogsheetData(
     String fileId,
     String generatorName,
@@ -303,12 +303,12 @@ class DatabaseStorageService {
       final cacheData = await getCacheData(fileId, generatorName, hour, date);
       return cacheData?['hasData'] ?? false;
     } catch (e) {
-      print('❌ STORAGE: Error checking logsheet data: $e');
+      print('❌ STORAGE: Error  logsheet data: $e');
       return false;
     }
   }
 
-  /// Clear expired cache entries
+  /// Bersihkan expired cache entries
   static Future<int> clearExpiredCache() async {
     try {
       final db = await _dbService.database;
@@ -321,12 +321,12 @@ class DatabaseStorageService {
       print('🗑️ STORAGE: Cleared $deleted expired cache entries');
       return deleted;
     } catch (e) {
-      print('❌ STORAGE: Error clearing expired cache: $e');
+      print('❌ STORAGE:  clearing expired cache: $e');
       return 0;
     }
   }
 
-  /// Clear all cache untuk fileId tertentu
+  /// Bersihkan all cache untuk fileId tertentu
   static Future<bool> clearCacheByFileId(String fileId) async {
     try {
       final db = await _dbService.database;
@@ -339,21 +339,21 @@ class DatabaseStorageService {
       print('🗑️ STORAGE: Cleared $deleted cache entries for $fileId');
       return true;
     } catch (e) {
-      print('❌ STORAGE: Error clearing cache by fileId: $e');
+      print('❌ STORAGE:  clearing cache by fileId: $e');
       return false;
     }
   }
 
   // ========================================================================
-  // SETTINGS MANAGEMENT
+  // AturTINGS MANAGEMENT
   // ========================================================================
 
-  /// Set setting value
+  /// Atur setting value
   static Future<bool> setSetting(String key, String value) async {
     try {
       final db = await _dbService.database;
 
-      // Check if setting exists
+      // Cek if setting exists
       final existing = await db.query(
         'settings',
         where: 'key = ?',
@@ -382,12 +382,12 @@ class DatabaseStorageService {
         return id > 0;
       }
     } catch (e) {
-      print('❌ STORAGE: Error setting value for $key: $e');
+      print('❌ STORAGE:  setting value for $key: $e');
       return false;
     }
   }
 
-  /// Get setting value
+  /// Ambil setting value
   static Future<String?> getSetting(String key, {String? defaultValue}) async {
     try {
       final db = await _dbService.database;
@@ -404,12 +404,12 @@ class DatabaseStorageService {
 
       return defaultValue;
     } catch (e) {
-      print('❌ STORAGE: Error getting value for $key: $e');
+      print('❌ STORAGE:  getting value for $key: $e');
       return defaultValue;
     }
   }
 
-  /// Get all settings
+  /// Ambil all settings
   static Future<Map<String, String>> getAllSettings() async {
     try {
       final db = await _dbService.database;
@@ -422,12 +422,12 @@ class DatabaseStorageService {
 
       return settings;
     } catch (e) {
-      print('❌ STORAGE: Error getting all settings: $e');
+      print('❌ STORAGE:  getting all settings: $e');
       return {};
     }
   }
 
-  /// Delete setting
+  /// Hapus setting
   static Future<bool> deleteSetting(String key) async {
     try {
       final db = await _dbService.database;
@@ -439,7 +439,7 @@ class DatabaseStorageService {
 
       return deleted > 0;
     } catch (e) {
-      print('❌ STORAGE: Error deleting setting $key: $e');
+      print('❌ STORAGE:  deleting setting $key: $e');
       return false;
     }
   }
@@ -448,7 +448,7 @@ class DatabaseStorageService {
   // STATISTICS & UTILITY METHODS
   // ========================================================================
 
-  /// Get storage statistics
+  /// Ambil storage statistics
   static Future<Map<String, int>> getStorageStats() async {
     try {
       final db = await _dbService.database;
@@ -475,12 +475,12 @@ class DatabaseStorageService {
         'expiredCache': expiredCacheCount,
       };
     } catch (e) {
-      print('❌ STORAGE: Error getting storage stats: $e');
+      print('❌ STORAGE:  getting storage stats: $e');
       return {'generators': 0, 'cache': 0, 'settings': 0, 'expiredCache': 0};
     }
   }
 
-  /// Clear all storage data (untuk testing)
+  /// Bersihkan all storage data (untuk testing)
   static Future<bool> clearAllStorageData() async {
     try {
       final db = await _dbService.database;
@@ -492,12 +492,12 @@ class DatabaseStorageService {
       print('✅ STORAGE: All storage data cleared');
       return true;
     } catch (e) {
-      print('❌ STORAGE: Error clearing storage data: $e');
+      print('❌ STORAGE:  clearing storage data: $e');
       return false;
     }
   }
 
-  /// Initialize default generators
+  /// Inisialisasi default generators
   static Future<void> initializeDefaultGenerators() async {
     try {
       final generatorCount = await (await _dbService.database).rawQuery(
@@ -506,7 +506,7 @@ class DatabaseStorageService {
       final count = generatorCount.first['count'] as int;
 
       if (count == 0) {
-        // Add default generators
+        // Tambah default generators
         final defaultGenerators = ['Generator 1', 'Generator 2', 'Generator 3'];
 
         for (final generatorName in defaultGenerators) {
@@ -516,7 +516,7 @@ class DatabaseStorageService {
         print('✅ STORAGE: Default generators initialized');
       }
     } catch (e) {
-      print('❌ STORAGE: Error initializing default generators: $e');
+      print('❌ STORAGE:  initializing default generators: $e');
     }
   }
 }

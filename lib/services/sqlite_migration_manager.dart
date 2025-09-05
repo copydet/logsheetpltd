@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+﻿import 'package:sqflite/sqflite.dart';
 import 'database_service.dart';
 
 /// Manager untuk mengelola migrasi SQLite database
@@ -136,7 +136,7 @@ class SQLiteMigrationManager {
         orderBy: 'created_at ASC',
       );
       
-      print('📊 TEMP DATA: Ditemukan ${result.length} data yang belum disync');
+      print('📊 TEMP DATA: Ditemukan ${.length} data yang belum disync');
       return result;
     } catch (e) {
       print('❌ TEMP DATA: Gagal mengambil data yang belum disync: $e');

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesInspector {
@@ -119,7 +119,7 @@ class SharedPreferencesInspector {
     return 'SharedPreferences dalam kondisi baik.';
   }
 
-  /// Cleanup data lama berdasarkan tanggal
+  /// Bersihkanup data lama berdasarkan tanggal
   static Future<int> cleanupOldData({int keepDays = 30}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -151,7 +151,7 @@ class SharedPreferencesInspector {
 
       return deletedCount;
     } catch (e) {
-      print('❌ Error during cleanup: $e');
+      print('❌  during cleanup: $e');
       return 0;
     }
   }

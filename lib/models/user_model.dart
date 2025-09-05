@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
   final String uid;
@@ -25,7 +25,7 @@ class UserModel {
     this.lastLogin,
   });
 
-  /// Create UserModel dari Firestore document
+  /// Buat UserModel dari Firestore document
   factory UserModel.fromFirestore(Map<String, dynamic> data, String uid) {
     return UserModel(
       uid: uid,
@@ -56,7 +56,7 @@ class UserModel {
     return null;
   }
 
-  /// Convert ke Map untuk Firestore
+  /// Ubah ke Map untuk Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'username': username,
@@ -71,13 +71,13 @@ class UserModel {
     };
   }
 
-  /// Check apakah user punya akses ke generator tertentu
+  /// Cek apakah user punya akses ke generator tertentu
   bool hasGeneratorAccess(String generatorName) {
     return generatorAccess.contains(generatorName) ||
         permissions.canViewAllGenerators;
   }
 
-  /// Get display info untuk UI
+  /// Ambil display info untuk UI
   String get roleDisplayName {
     switch (role.toLowerCase()) {
       case 'admin':

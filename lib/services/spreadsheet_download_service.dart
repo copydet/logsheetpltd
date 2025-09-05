@@ -1,4 +1,4 @@
-import 'package:url_launcher/url_launcher.dart';
+﻿import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 
 /// Service untuk mendownload file spreadsheet dari Google Drive
@@ -39,10 +39,10 @@ class SpreadsheetDownloadService {
       try {
         if (await canLaunchUrl(uri)) {
           launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-          print('✅ DOWNLOAD: External app launch successful');
+          print('✅ DOWNLOAD: External app launch ful');
         }
       } catch (e) {
-        print('⚠️ DOWNLOAD: External app launch failed: $e');
+        print('⚠️ DOWNLOAD: External app launch : $e');
       }
 
       // Method 2: Try platform default mode if external failed
@@ -50,10 +50,10 @@ class SpreadsheetDownloadService {
         try {
           if (await canLaunchUrl(uri)) {
             launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
-            print('✅ DOWNLOAD: Platform default launch successful');
+            print('✅ DOWNLOAD: Platform default launch ful');
           }
         } catch (e) {
-          print('⚠️ DOWNLOAD: Platform default launch failed: $e');
+          print('⚠️ DOWNLOAD: Platform default launch : $e');
         }
       }
 
@@ -62,10 +62,10 @@ class SpreadsheetDownloadService {
         try {
           if (await canLaunchUrl(uri)) {
             launched = await launchUrl(uri, mode: LaunchMode.inAppWebView);
-            print('✅ DOWNLOAD: In-app web view launch successful');
+            print('✅ DOWNLOAD: In-app web view launch ful');
           }
         } catch (e) {
-          print('⚠️ DOWNLOAD: In-app web view launch failed: $e');
+          print('⚠️ DOWNLOAD: In-app web view launch : $e');
         }
       }
 
@@ -75,7 +75,7 @@ class SpreadsheetDownloadService {
         );
       }
     } catch (e) {
-      print('❌ DOWNLOAD: Error downloading spreadsheet: $e');
+      print('❌ DOWNLOAD:  downloading spreadsheet: $e');
       rethrow;
     }
   }
@@ -87,7 +87,7 @@ class SpreadsheetDownloadService {
     String generatorName,
     String date,
   ) async {
-    // Check if this is Firestore data
+    // Cek if this is Firestore data
     if (fileId.startsWith('firestore_')) {
       await _showFirestoreNotSupportedDialog(context);
       return;

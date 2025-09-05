@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'temperature_storage_service.dart';
 import 'database_temperature_service.dart';
@@ -12,7 +12,7 @@ class LogsheetService {
       '17bXUXVnETMzqzQ7JtlVPpm8p6Y2vMf8MpbyKxE2gyy8';
   static const String _targetFolderId = '1mOJd9txDjF04bmYroK-9jXpyAJc8rh9a';
 
-  /// Creates a new logsheet based on the template
+  /// Buats a new logsheet based on the template
   static Future<Map<String, dynamic>> createLogsheet(
     String generatorName,
   ) async {
@@ -77,7 +77,7 @@ class LogsheetService {
 
       throw ApiException(errorData['error'] ?? 'Gagal membuat logsheet');
     } catch (e) {
-      print('Error in createLogsheet: ${e.toString()}');
+      print(' in createLogsheet: ${e.toString()}');
       if (e is ApiException || e is AuthenticationException) {
         rethrow;
       }
@@ -97,13 +97,13 @@ class LogsheetService {
       print('🔧 SERVICE: fileId isEmpty = ${fileId.isEmpty}');
 
       if (fileId.isEmpty) {
-        print('🔧 SERVICE ERROR: fileId is empty string!');
+        print('🔧 SERVICE : fileId is empty string!');
         throw ApiException('FileId tidak boleh kosong');
       }
 
       print('🔧 SERVICE: Saving data to fileId: $fileId');
 
-      // Get current hour to determine row number
+      // Ambil current hour to determine row number
       final now = DateTime.now();
       final hour = now.hour;
       final minute = now.minute;
@@ -268,7 +268,7 @@ class LogsheetService {
         logsheetDataWithMeta['jam'] = targetHour;
         logsheetDataWithMeta['savedDate'] = now.toIso8601String();
 
-        // Get generator name from logsheetData
+        // Ambil generator name from logsheetData
         final generatorName =
             logsheetDataWithMeta['generatorName']?.toString() ?? 'unknown';
 
@@ -287,7 +287,7 @@ class LogsheetService {
         // Don't rethrow - this is for sync enhancement, not critical for main functionality
       }
     } catch (e) {
-      print('Error in saveLogsheetData: ${e.toString()}');
+      print(' in saveLogsheetData: ${e.toString()}');
       if (e is ApiException) {
         rethrow;
       }
@@ -320,7 +320,7 @@ class LogsheetService {
       final errorData = jsonDecode(response.body);
       throw ApiException(errorData['error'] ?? 'Gagal membaca data logsheet');
     } catch (e) {
-      print('Error in readLogsheetData: ${e.toString()}');
+      print(' in readLogsheetData: ${e.toString()}');
       if (e is ApiException) {
         rethrow;
       }
@@ -328,7 +328,7 @@ class LogsheetService {
     }
   }
 
-  /// Checks if data exists for a specific hour
+  /// Ceks if data exists for a specific hour
   static Future<bool> checkHourHasData(String fileId, int hour) async {
     try {
       print('🔍 SERVICE: checkHourHasData called for hour $hour');
@@ -343,7 +343,7 @@ class LogsheetService {
         rowNumber = 27 + hour; // 00:00=27, 01:00=28, ..., 09:00=36
       }
 
-      print('🔍 SERVICE: Checking row $rowNumber for hour $hour');
+      print('🔍 SERVICE:  row $rowNumber for hour $hour');
 
       // Request specific cells for this hour
       final cells = [
@@ -367,7 +367,7 @@ class LogsheetService {
         final responseData = jsonDecode(response.body);
         final cellData = responseData['data'] ?? {};
 
-        // Check if key cells have data (not null/empty)
+        // Cek if key cells have data (not null/empty)
         final jamOperasi = cellData['D$rowNumber'];
         final rpm = cellData['E$rowNumber'];
 
@@ -385,15 +385,15 @@ class LogsheetService {
 
       return false;
     } catch (e) {
-      print('🔍 SERVICE: Error checking hour data: $e');
+      print('🔍 SERVICE: Error  hour data: $e');
       return false;
     }
   }
 
-  /// Validates if a file exists in Google Drive
+  /// Validasis if a file exists in Google Drive
   static Future<bool> validateFileExists(String fileId) async {
     try {
-      print('🔍 VALIDATE: Checking if file exists: $fileId');
+      print('🔍 VALIDATE:  if file exists: $fileId');
 
       final response = await http.get(
         Uri.parse('$_baseUrl/validate-file/$fileId'),
@@ -415,7 +415,7 @@ class LogsheetService {
         print('🔍 VALIDATE: File not found (404)');
         return false;
       } else {
-        print('🔍 VALIDATE: Error validating file: ${response.statusCode}');
+        print('🔍 VALIDATE:  validating file: ${response.statusCode}');
         // Assume file exists if we can't validate (network issues, etc.)
         return true;
       }
@@ -426,7 +426,7 @@ class LogsheetService {
     }
   }
 
-  /// Deletes a logsheet from Google Drive
+  /// Hapuss a logsheet from Google Drive
   static Future<Map<String, dynamic>> deleteLogsheet(
     String fileId, {
     bool permanent = false,
@@ -449,18 +449,18 @@ class LogsheetService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print('✅ LOGSHEET DELETED SUCCESSFULLY');
+        print('✅ LOGSHEET DELETED FULLY');
         return responseData;
       } else if (response.statusCode == 404) {
         print('❌ LOGSHEET NOT FOUND');
         throw ApiException('Logsheet tidak ditemukan');
       } else {
-        print('❌ DELETE FAILED: ${response.statusCode}');
+        print('❌ DELETE : ${response.statusCode}');
         final errorData = jsonDecode(response.body);
         throw ApiException(errorData['message'] ?? 'Gagal menghapus logsheet');
       }
     } catch (e) {
-      print('❌ DELETE ERROR: $e');
+      print('❌ DELETE : $e');
       if (e is ApiException) rethrow;
       throw ApiException('Gagal menghapus logsheet: $e');
     }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/shift_photo_service.dart';
 import '../models/firebase_user_model.dart';
@@ -55,7 +55,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
         });
       }
     } catch (e) {
-      print('Error loading shift photo data: $e');
+      print(' loading shift photo data: $e');
     }
   }
 
@@ -68,7 +68,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
         });
       }
     } catch (e) {
-      print('Error loading current user: $e');
+      print(' loading current user: $e');
     }
   }
 

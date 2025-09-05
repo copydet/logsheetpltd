@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/shift_photo_service.dart';
@@ -43,7 +43,7 @@ class _ShiftPhotoUploadWidgetState extends State<ShiftPhotoUploadWidget> {
 
       print('📷 PHOTO: Has photo today: $hasPhoto, URL: $photoUrl');
     } catch (e) {
-      print('❌ PHOTO: Error checking existing photo: $e');
+      print('❌ PHOTO: Error  existing photo: $e');
     }
   }
 
@@ -121,7 +121,7 @@ class _ShiftPhotoUploadWidgetState extends State<ShiftPhotoUploadWidget> {
         _selectedPhoto = null;
       });
     } catch (e) {
-      print('❌ PHOTO: Error clearing photo: $e');
+      print('❌ PHOTO:  clearing photo: $e');
     }
   }
 

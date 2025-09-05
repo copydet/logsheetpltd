@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
 class AdditionalInfoWidget extends StatefulWidget {
@@ -26,7 +26,7 @@ class _AdditionalInfoWidgetState extends State<AdditionalInfoWidget> {
         });
       }
     } catch (e) {
-      print('❌ Error loading current operator: $e');
+      print('❌  loading current operator: $e');
       if (mounted) {
         setState(() {
           operatorName = 'Tidak Diketahui';

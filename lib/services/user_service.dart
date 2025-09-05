@@ -1,4 +1,4 @@
-/// DEPRECATED: Legacy user service with hardcoded credentials
+﻿/// DEPRECATED: Legacy user service with hardcoded credentials
 /// This service has been replaced by Firebase Authentication (AuthService)
 /// 
 /// The old system used hardcoded credentials:
@@ -48,16 +48,16 @@ class UserService {
     return [];
   }
 
-  /// Clean up old user data
+  /// Bersihkan up old user data
   static Future<void> cleanupOldUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_usersKey);
       await prefs.remove(_currentUserKey);
       await prefs.remove(_lastActivityKey);
-      print('🧹 Old user data cleaned up successfully');
+      print('🧹 Old user data cleaned up fully');
     } catch (e) {
-      print('❌ Error cleaning up old user data: $e');
+      print('❌  cleaning up old user data: $e');
     }
   }
 }

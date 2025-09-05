@@ -1,4 +1,4 @@
-import 'database_service.dart';
+﻿import 'database_service.dart';
 import '../models/database/temperature_model.dart';
 
 /// ============================================================================
@@ -15,7 +15,7 @@ class DatabaseTemperatureService {
   // TEMPERATURE DATA MANAGEMENT
   // ========================================================================
 
-  /// Save temperature data ke database
+  /// Simpan temperature data ke database
   static Future<bool> saveTemperatureData({
     required String fileId,
     required int hour,
@@ -44,7 +44,7 @@ class DatabaseTemperatureService {
 
       final db = await _dbService.database;
 
-      // Check if data already exists
+      // Cek if data already exists
       final existing = await db.query(
         'temperature_data',
         where: 'file_id = ? AND hour = ? AND date = ?',
@@ -72,12 +72,12 @@ class DatabaseTemperatureService {
         return id > 0;
       }
     } catch (e) {
-      print('❌ TEMP: Error saving temperature data: $e');
+      print('❌ TEMP:  saving temperature data: $e');
       return false;
     }
   }
 
-  /// Get temperature data by fileId, hour, dan date
+  /// Ambil temperature data by fileId, hour, dan date
   static Future<Map<String, dynamic>?> getTemperatureData(
     String fileId,
     int hour,
@@ -108,12 +108,12 @@ class DatabaseTemperatureService {
         'engineTempExhaust': tempData.engineTempExhaust,
       };
     } catch (e) {
-      print('❌ TEMP: Error getting temperature data: $e');
+      print('❌ TEMP:  getting temperature data: $e');
       return null;
     }
   }
 
-  /// Get all temperature data untuk fileId tertentu
+  /// Ambil all temperature data untuk fileId tertentu
   static Future<List<Map<String, dynamic>>> getTemperatureDataByFileId(
     String fileId,
   ) async {
@@ -142,12 +142,12 @@ class DatabaseTemperatureService {
         };
       }).toList();
     } catch (e) {
-      print('❌ TEMP: Error getting temperature data by fileId: $e');
+      print('❌ TEMP:  getting temperature data by fileId: $e');
       return [];
     }
   }
 
-  /// Get temperature data by date range
+  /// Ambil temperature data by date range
   static Future<List<Map<String, dynamic>>> getTemperatureDataByDateRange(
     String startDate,
     String endDate,
@@ -177,12 +177,12 @@ class DatabaseTemperatureService {
         };
       }).toList();
     } catch (e) {
-      print('❌ TEMP: Error getting temperature data by date range: $e');
+      print('❌ TEMP:  getting temperature data by date range: $e');
       return [];
     }
   }
 
-  /// Get temperature data by generator name untuk semua logsheet files
+  /// Ambil temperature data by generator name untuk semua logsheet files
   /// Method ini mengambil data dari semua file_id yang terkait dengan generator tertentu
   static Future<List<Map<String, dynamic>>> getTemperatureDataByGeneratorName(
     String generatorName, {
@@ -191,7 +191,7 @@ class DatabaseTemperatureService {
     try {
       final db = await _dbService.database;
 
-      // Build query untuk mencari temperature data berdasarkan generator name
+      // Bangun query untuk mencari temperature data berdasarkan generator name
       // Menggunakan JOIN dengan logsheets table untuk mendapatkan semua file_id
       String query = '''
         SELECT DISTINCT 
@@ -212,7 +212,7 @@ class DatabaseTemperatureService {
 
       List<dynamic> whereArgs = [generatorName];
 
-      // Add date filter if limitDays is specified
+      // Tambah date filter if limitDays is specified
       if (limitDays != null) {
         final cutoffDate = DateTime.now().subtract(Duration(days: limitDays));
         final dateStr =
@@ -249,12 +249,12 @@ class DatabaseTemperatureService {
         };
       }).toList();
     } catch (e) {
-      print('❌ TEMP: Error getting temperature data by generator name: $e');
+      print('❌ TEMP:  getting temperature data by generator name: $e');
       return [];
     }
   }
 
-  /// Check if temperature data exists
+  /// Cek if temperature data exists
   static Future<bool> hasTemperatureData(
     String fileId,
     int hour,
@@ -271,12 +271,12 @@ class DatabaseTemperatureService {
 
       return result.isNotEmpty;
     } catch (e) {
-      print('❌ TEMP: Error checking temperature data existence: $e');
+      print('❌ TEMP: Error  temperature data existence: $e');
       return false;
     }
   }
 
-  /// Delete temperature data
+  /// Hapus temperature data
   static Future<bool> deleteTemperatureData(
     String fileId,
     int hour,
@@ -298,12 +298,12 @@ class DatabaseTemperatureService {
         return false;
       }
     } catch (e) {
-      print('❌ TEMP: Error deleting temperature data: $e');
+      print('❌ TEMP:  deleting temperature data: $e');
       return false;
     }
   }
 
-  /// Delete all temperature data untuk fileId tertentu
+  /// Hapus all temperature data untuk fileId tertentu
   static Future<bool> deleteAllTemperatureDataByFileId(String fileId) async {
     try {
       final db = await _dbService.database;
@@ -316,7 +316,7 @@ class DatabaseTemperatureService {
       print('✅ TEMP: Deleted $deleted temperature data records for $fileId');
       return true;
     } catch (e) {
-      print('❌ TEMP: Error deleting temperature data by fileId: $e');
+      print('❌ TEMP:  deleting temperature data by fileId: $e');
       return false;
     }
   }
@@ -325,7 +325,7 @@ class DatabaseTemperatureService {
   // CHART DATA METHODS
   // ========================================================================
 
-  /// Get chart data untuk fileId tertentu (untuk grafik)
+  /// Ambil chart data untuk fileId tertentu (untuk grafik)
   static Future<Map<String, List<Map<String, dynamic>>>> getChartData(
     String fileId,
   ) async {
@@ -334,7 +334,7 @@ class DatabaseTemperatureService {
 
       final chartData = <String, List<Map<String, dynamic>>>{};
 
-      // Initialize lists for each temperature type
+      // Inisialisasi lists for each temperature type
       chartData['waterTemp'] = [];
       chartData['lubeOilTemp'] = [];
       chartData['tempBearing'] = [];
@@ -360,12 +360,12 @@ class DatabaseTemperatureService {
 
       return chartData;
     } catch (e) {
-      print('❌ TEMP: Error getting chart data: $e');
+      print('❌ TEMP:  getting chart data: $e');
       return {};
     }
   }
 
-  /// Get hourly temperature averages untuk date range
+  /// Ambil hourly temperature averages untuk date range
   static Future<Map<int, Map<String, double>>> getHourlyAverages(
     String startDate,
     String endDate,
@@ -412,7 +412,7 @@ class DatabaseTemperatureService {
 
       return averages;
     } catch (e) {
-      print('❌ TEMP: Error getting hourly averages: $e');
+      print('❌ TEMP:  getting hourly averages: $e');
       return {};
     }
   }
@@ -421,7 +421,7 @@ class DatabaseTemperatureService {
   // STATISTICS METHODS
   // ========================================================================
 
-  /// Get temperature statistics
+  /// Ambil temperature statistics
   static Future<Map<String, dynamic>> getTemperatureStats() async {
     try {
       final db = await _dbService.database;
@@ -436,7 +436,7 @@ class DatabaseTemperatureService {
         'SELECT COUNT(DISTINCT date) as count FROM temperature_data',
       );
 
-      // Get temperature ranges
+      // Ambil temperature ranges
       final rangeResult = await db.rawQuery('''
         SELECT 
           MIN(water_temp) as min_water_temp, MAX(water_temp) as max_water_temp,
@@ -491,7 +491,7 @@ class DatabaseTemperatureService {
         },
       };
     } catch (e) {
-      print('❌ TEMP: Error getting temperature stats: $e');
+      print('❌ TEMP:  getting temperature stats: $e');
       return {
         'totalRecords': 0,
         'uniqueFiles': 0,
@@ -502,10 +502,10 @@ class DatabaseTemperatureService {
   }
 
   // ========================================================================
-  // UTILITY METHODS
+  // Method utilitasS
   // ========================================================================
 
-  /// Clear all temperature data (untuk testing)
+  /// Bersihkan all temperature data (untuk testing)
   static Future<bool> clearAllTemperatureData() async {
     try {
       final db = await _dbService.database;
@@ -514,12 +514,12 @@ class DatabaseTemperatureService {
       print('✅ TEMP: All temperature data cleared');
       return true;
     } catch (e) {
-      print('❌ TEMP: Error clearing temperature data: $e');
+      print('❌ TEMP:  clearing temperature data: $e');
       return false;
     }
   }
 
-  /// Get data storage size estimate
+  /// Ambil data storage size estimate
   static Future<Map<String, int>> getStorageInfo() async {
     try {
       final stats = await getTemperatureStats();
@@ -535,7 +535,7 @@ class DatabaseTemperatureService {
         'estimatedMB': (estimatedBytes / (1024 * 1024)).round(),
       };
     } catch (e) {
-      print('❌ TEMP: Error getting storage info: $e');
+      print('❌ TEMP: Error getting storage : $e');
       return {
         'totalRecords': 0,
         'estimatedBytes': 0,

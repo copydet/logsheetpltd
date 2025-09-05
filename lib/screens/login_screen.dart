@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:io';
 import '../services/auth_service.dart';
 import '../services/shift_photo_service.dart';
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       });
     } catch (e) {
-      print('Error checking existing photo: $e');
+      print('Error  existing photo: $e');
     }
   }
 
@@ -269,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           icon: const Icon(Icons.upload_file),
                           label: const Text('Upload'),
                           onPressed: () {
-                            // TODO: Implement upload
+                            // TODO: Implementasi upload
                           },
                         ),
                         const SizedBox(width: 12),
@@ -400,7 +400,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               return;
                             }
 
-                            // Check foto shift wajib untuk shift saat ini
+                            // Cek foto shift wajib untuk shift saat ini
                             final photoService = ShiftPhotoService();
                             final hasPhotoToday = await photoService
                                 .hasPhotoToday();
@@ -463,7 +463,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () {
-                    // TODO: Implement forgot password
+                    // TODO: Implementasi forgot password
                   },
                   child: const Text(
                     'Lupa password?',
@@ -496,7 +496,7 @@ class _LoginScreenState extends State<LoginScreen> {
   ) {
     final isSelected = _selectedShift == value;
     final isCurrentShift =
-        _currentShift == value; // Check if this is current shift
+        _currentShift == value; // Cek if this is current shift
 
     return GestureDetector(
       onTap: () {

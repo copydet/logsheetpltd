@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'database_service.dart';
@@ -27,7 +27,7 @@ class MigrationService {
       // Backup existing SharedPreferences data
       await _backupSharedPreferences();
 
-      // Initialize database
+      // Inisialisasi database
       await _dbService.database;
 
       // Migrate users
@@ -53,7 +53,7 @@ class MigrationService {
       );
       return isValid;
     } catch (e) {
-      print('❌ MIGRATION: Error during migration: $e');
+      print('❌ MIGRATION:  during migration: $e');
       return false;
     }
   }
@@ -75,7 +75,7 @@ class MigrationService {
         backup[key] = value;
       }
 
-      // Save backup to database settings table
+      // Simpan backup to database settings table
       final db = await _dbService.database;
       await db.insert('settings', {
         'key': '_migration_backup',
@@ -85,7 +85,7 @@ class MigrationService {
 
       print('💾 MIGRATION: Backup created with ${allKeys.length} keys');
     } catch (e) {
-      print('❌ MIGRATION: Error creating backup: $e');
+      print('❌ MIGRATION:  creating backup: $e');
     }
   }
 
@@ -100,7 +100,7 @@ class MigrationService {
       final prefs = await SharedPreferences.getInstance();
       final db = await _dbService.database;
 
-      // Get users from SharedPreferences
+      // Ambil users from SharedPreferences
       final usersJson = prefs.getString('users');
       if (usersJson != null) {
         final usersList = json.decode(usersJson) as List;
@@ -139,7 +139,7 @@ class MigrationService {
         if (userResults.isNotEmpty) {
           final userId = userResults.first['id'] as int;
 
-          // Create session
+          // Buat session
           final session = DatabaseUserSession(
             userId: userId,
             sessionToken: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -159,7 +159,7 @@ class MigrationService {
 
       print('👤 MIGRATION: Users migration completed');
     } catch (e) {
-      print('❌ MIGRATION: Error migrating users: $e');
+      print('❌ MIGRATION:  migrating users: $e');
     }
   }
 
@@ -178,11 +178,11 @@ class MigrationService {
       final defaultGenerators = ['Generator 1', 'Generator 2', 'Generator 3'];
 
       for (final generatorName in defaultGenerators) {
-        // Check generator status
+        // Cek generator status
         final statusKey = 'generator_status_$generatorName';
         final isActive = prefs.getBool(statusKey) ?? false;
 
-        // Check active file ID
+        // Cek active file ID
         final fileIdKey = 'active_file_id_$generatorName';
         final activeFileId = prefs.getString(fileIdKey);
 
@@ -204,7 +204,7 @@ class MigrationService {
 
       print('⚡ MIGRATION: Generators migration completed');
     } catch (e) {
-      print('❌ MIGRATION: Error migrating generators: $e');
+      print('❌ MIGRATION:  migrating generators: $e');
     }
   }
 
@@ -251,7 +251,7 @@ class MigrationService {
               migratedCount++;
             }
           } catch (e) {
-            print('❌ MIGRATION: Error migrating temperature key $key: $e');
+            print('❌ MIGRATION:  migrating temperature key $key: $e');
           }
         }
       }
@@ -260,7 +260,7 @@ class MigrationService {
         '🌡️ MIGRATION: Temperature data migration completed ($migratedCount records)',
       );
     } catch (e) {
-      print('❌ MIGRATION: Error migrating temperature data: $e');
+      print('❌ MIGRATION:  migrating temperature data: $e');
     }
   }
 
@@ -286,7 +286,7 @@ class MigrationService {
 
             final value = prefs.get(key);
             if (value != null) {
-              // Create cache entry
+              // Buat cache entry
               final cache = LogsheetCache(
                 fileId: 'migrated_$key',
                 generatorName: 'unknown',
@@ -309,7 +309,7 @@ class MigrationService {
               migratedCount++;
             }
           } catch (e) {
-            print('❌ MIGRATION: Error migrating cache key $key: $e');
+            print('❌ MIGRATION:  migrating cache key $key: $e');
           }
         }
       }
@@ -318,12 +318,12 @@ class MigrationService {
         '📄 MIGRATION: Logsheet cache migration completed ($migratedCount records)',
       );
     } catch (e) {
-      print('❌ MIGRATION: Error migrating logsheet cache: $e');
+      print('❌ MIGRATION:  migrating logsheet cache: $e');
     }
   }
 
   // ========================================================================
-  // SETTINGS MIGRATION
+  // AturTINGS MIGRATION
   // ========================================================================
 
   static Future<void> _migrateSettings() async {
@@ -363,7 +363,7 @@ class MigrationService {
             migratedCount++;
           }
         } catch (e) {
-          print('❌ MIGRATION: Error migrating setting $key: $e');
+          print('❌ MIGRATION:  migrating setting $key: $e');
         }
       }
 
@@ -371,7 +371,7 @@ class MigrationService {
         '⚙️ MIGRATION: Settings migration completed ($migratedCount records)',
       );
     } catch (e) {
-      print('❌ MIGRATION: Error migrating settings: $e');
+      print('❌ MIGRATION:  migrating settings: $e');
     }
   }
 
@@ -383,14 +383,14 @@ class MigrationService {
     try {
       print('✅ MIGRATION: Verifying migration...');
 
-      // Check table counts
+      // Cek table counts
       final userCount = await _dbService.getTableRowCount('users');
       final generatorCount = await _dbService.getTableRowCount('generators');
       final tempCount = await _dbService.getTableRowCount('temperature_data');
       final cacheCount = await _dbService.getTableRowCount('logsheet_cache');
       final settingsCount = await _dbService.getTableRowCount('settings');
 
-      print('✅ MIGRATION: Verification results:');
+      print('✅ MIGRATION: Verification s:');
       print('   - Users: $userCount');
       print('   - Generators: $generatorCount');
       print('   - Temperature data: $tempCount');
@@ -399,16 +399,16 @@ class MigrationService {
 
       return true;
     } catch (e) {
-      print('❌ MIGRATION: Error during verification: $e');
+      print('❌ MIGRATION:  during verification: $e');
       return false;
     }
   }
 
   // ========================================================================
-  // CLEANUP METHODS
+  // BersihkanUP METHODS
   // ========================================================================
 
-  /// Clear SharedPreferences after successful migration
+  /// Bersihkan SharedPreferences after successful migration
   static Future<void> clearSharedPreferencesAfterMigration() async {
     try {
       print('🧹 MIGRATION: Clearing SharedPreferences after migration...');
@@ -418,7 +418,7 @@ class MigrationService {
 
       print('🧹 MIGRATION: SharedPreferences cleared');
     } catch (e) {
-      print('❌ MIGRATION: Error clearing SharedPreferences: $e');
+      print('❌ MIGRATION:  clearing SharedPreferences: $e');
     }
   }
 
@@ -455,10 +455,10 @@ class MigrationService {
           }
         }
 
-        print('🔄 MIGRATION: Backup restored successfully');
+        print('🔄 MIGRATION: Backup restored fully');
       }
     } catch (e) {
-      print('❌ MIGRATION: Error restoring from backup: $e');
+      print('❌ MIGRATION:  restoring from backup: $e');
     }
   }
 }

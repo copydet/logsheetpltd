@@ -1,4 +1,4 @@
-/// ============================================================================
+﻿/// ============================================================================
 /// TEMPERATURE DATA MODEL
 /// ============================================================================
 /// Model untuk temperature data di SQLite database
@@ -72,15 +72,15 @@ class TemperatureData {
       'engine_temp_exhaust': engineTempExhaust,
       'created_at':
           createdAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      // Remove updated_at since table doesn't have this column
+      // Hapus updated_at since table doesn't have this column
     };
   }
 
   // ========================================================================
-  // UTILITY METHODS
+  // Method utilitasS
   // ========================================================================
 
-  /// Create copy dengan updated values
+  /// Buat copy dengan updated values
   TemperatureData copyWith({
     int? id,
     String? fileId,
@@ -113,7 +113,7 @@ class TemperatureData {
     );
   }
 
-  /// Get formatted date untuk display
+  /// Ambil formatted date untuk display
   String get formattedDate {
     if (date.length >= 8) {
       return '${date.substring(6, 8)}/${date.substring(4, 6)}/${date.substring(0, 4)}';
@@ -121,7 +121,7 @@ class TemperatureData {
     return date;
   }
 
-  /// Check if temperature values are valid
+  /// Cek if temperature values are valid
   bool get isValid {
     return waterTemp >= 0 &&
         lubeOilTemp >= 0 &&
@@ -136,12 +136,12 @@ class TemperatureData {
         date.isNotEmpty;
   }
 
-  /// Get average winding temperature
+  /// Ambil average winding temperature
   double get averageWindingTemp {
     return (tempWindingU + tempWindingV + tempWindingW) / 3;
   }
 
-  /// Get highest temperature value
+  /// Ambil highest temperature value
   double get maxTemperature {
     return [
       waterTemp,
@@ -154,7 +154,7 @@ class TemperatureData {
     ].reduce((a, b) => a > b ? a : b);
   }
 
-  /// Get lowest temperature value
+  /// Ambil lowest temperature value
   double get minTemperature {
     return [
       waterTemp,
@@ -167,7 +167,7 @@ class TemperatureData {
     ].reduce((a, b) => a < b ? a : b);
   }
 
-  /// Convert to JSON string
+  /// Ubah to JSON string
   String toJson() {
     return '''
 {

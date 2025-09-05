@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'app_exports.dart';
@@ -10,22 +10,22 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Inisialisasi Firebase
-  print('🔥 APLIKASI: Menginisialisasi Firebase...');
+  print('APLIKASI: Memulai Firebase...');
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ APLIKASI: Firebase berhasil diinisialisasi');
+    print('APLIKASI: Firebase sudah siap');
   } catch (e) {
-    print('❌ APLIKASI: Gagal menginisialisasi Firebase: $e');
+    print('APLIKASI: Firebase gagal dimulai: $e');
   }
 
   // Inisialisasi migrasi SQLite
-  print('🔄 APLIKASI: Menginisialisasi migrasi SQLite...');
+  print('APLIKASI: Memulai migrasi database...');
   final migrationSuccess = await MigrationService.migrateToSQLite();
 
   if (migrationSuccess) {
-    print('✅ APLIKASI: Migrasi SQLite berhasil diselesaikan');
+    print('APLIKASI: Migrasi database selesai');
   } else {
     print(
       '❌ APLIKASI: Migrasi SQLite gagal, akan dicoba ulang saat aplikasi digunakan',
@@ -33,12 +33,12 @@ void main() async {
   }
 
   // Inisialisasi Sync Manager
-  print('🔄 APLIKASI: Menginisialisasi Sync Manager...');
+  print('APLIKASI: Memulai sync manager...');
   try {
     await SyncManager.instance.initialize();
-    print('✅ APLIKASI: Sync Manager berhasil diinisialisasi');
+    print('APLIKASI: Sync manager sudah siap');
   } catch (e) {
-    print('❌ APLIKASI: Gagal menginisialisasi Sync Manager: $e');
+    print('APLIKASI: Sync manager gagal dimulai: $e');
   }
 
   runApp(const PowerPlantLogsheetApp());

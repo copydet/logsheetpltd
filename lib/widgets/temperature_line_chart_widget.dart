@@ -1,4 +1,4 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../app_exports.dart';
 import '../models/temperature_config.dart';
@@ -339,7 +339,7 @@ class _TemperatureLineChartWidgetState
       drawVerticalLine: true,
       drawHorizontalLine: true,
       horizontalInterval: null, // Auto interval
-      verticalInterval: 2, // Setiap 2 jam untuk 12 jam terakhir
+      verticalInterval: 2, // Aturiap 2 jam untuk 12 jam terakhir
       getDrawingHorizontalLine: (value) =>
           FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
       getDrawingVerticalLine: (value) =>
@@ -482,11 +482,11 @@ class _TemperatureLineChartWidgetState
         ),
       );
     }
-    return const Text(''); // Return empty untuk posisi lainnya
+    return const Text(''); // Kembalikan empty untuk posisi lainnya
   }
 
   // ========================================================================
-  // DATA PROCESSING METHODS
+  // Pemrosesan data METHODS
   // ========================================================================
 
   /// Generate data temperature untuk chart berdasarkan prioritas:
@@ -501,7 +501,7 @@ class _TemperatureLineChartWidgetState
     List<FlSpot> spots = [];
 
     try {
-      print('🔍 ===== CHART DEBUG: ${widget.generatorName} =====');
+      print('🔍 ===== CHART : ${widget.generatorName} =====');
       print('� FileId: ${widget.fileId}');
       print('📊 Parameter: $paramKey');
       print('�🌡️ CHART: Loading temperature data for $paramKey');
@@ -535,7 +535,7 @@ class _TemperatureLineChartWidgetState
         '🌡️ CHART: Using current real-time value (${spots.length} points)',
       );
     } catch (e) {
-      print('🌡️ CHART: Error loading temperature data: $e');
+      print('🌡️ CHART:  loading temperature data: $e');
     }
 
     return spots;
@@ -659,7 +659,7 @@ class _TemperatureLineChartWidgetState
         '🌡️ CHART: Firestore extraction complete: ${spots.length} data points for last 12 hours',
       );
     } catch (e) {
-      print('🌡️ CHART: Error loading from Firestore: $e');
+      print('🌡️ CHART:  loading from Firestore: $e');
     }
 
     return spots;
@@ -766,7 +766,7 @@ class _TemperatureLineChartWidgetState
         '🌡️ CHART: SQLite extraction complete: ${spots.length} data points for last 12 hours',
       );
     } catch (e) {
-      print('🌡️ CHART: Error loading from SQLite: $e');
+      print('🌡️ CHART:  loading from SQLite: $e');
     }
 
     return spots;
@@ -835,7 +835,7 @@ class _TemperatureLineChartWidgetState
       'engineTempExhaust': 'Engine Temp Exhaust',
     };
 
-    // Handle winding average secara khusus
+    // Tangani winding average secara khusus
     if (paramKey == 'tempWindingAvg') {
       return _calculateCurrentWindingAverage();
     }

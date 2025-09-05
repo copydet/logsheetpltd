@@ -1,4 +1,4 @@
-/// ============================================================================
+﻿/// ============================================================================
 /// DATABASE USER MODEL
 /// ============================================================================
 /// Model untuk SQLite database user storage
@@ -22,7 +22,7 @@ class DatabaseUser {
     this.updatedAt,
   });
 
-  /// Create DatabaseUser from database map
+  /// Buat DatabaseUser from database map
   factory DatabaseUser.fromMap(Map<String, dynamic> map) {
     return DatabaseUser(
       id: map['id'] as int?,
@@ -38,7 +38,7 @@ class DatabaseUser {
     );
   }
 
-  /// Convert DatabaseUser to database map
+  /// Ubah DatabaseUser to database map
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
       'username': username,
@@ -61,7 +61,7 @@ class DatabaseUser {
     return map;
   }
 
-  /// Create copy with updated fields
+  /// Buat copy with updated fields
   DatabaseUser copyWith({
     int? id,
     String? username,

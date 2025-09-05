@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service khusus untuk menyimpan dan membaca data temperatur
@@ -45,7 +45,7 @@ class TemperatureStorageService {
       print('🌡️ TEMP STORAGE: Key: $key');
       print('🌡️ TEMP STORAGE: Data: $dataToSave');
     } catch (e) {
-      print('❌ TEMP STORAGE: Error saving temperature data: $e');
+      print('❌ TEMP STORAGE:  saving temperature data: $e');
     }
   }
 
@@ -66,7 +66,7 @@ class TemperatureStorageService {
         int targetHour = currentHour - i;
         DateTime targetDateTime = date;
 
-        // Handle jam negatif (hari sebelumnya)
+        // Tangani jam negatif (hari sebelumnya)
         if (targetHour < 0) {
           targetHour += 24;
           targetDateTime = date.subtract(Duration(days: 1));
@@ -123,7 +123,7 @@ class TemperatureStorageService {
 
       return result;
     } catch (e) {
-      print('❌ TEMP STORAGE: Error getting temperature data: $e');
+      print('❌ TEMP STORAGE:  getting temperature data: $e');
       return [];
     }
   }
@@ -162,7 +162,7 @@ class TemperatureStorageService {
         );
       }
     } catch (e) {
-      print('❌ TEMP STORAGE: Error cleaning up old data: $e');
+      print('❌ TEMP STORAGE:  cleaning up old data: $e');
     }
   }
 
@@ -175,7 +175,7 @@ class TemperatureStorageService {
           .where((key) => key.startsWith(_keyPrefix))
           .toList();
 
-      print('🌡️ TEMP STORAGE DEBUG: Found ${keys.length} temperature records');
+      print('🌡️ TEMP STORAGE : Found ${keys.length} temperature records');
 
       for (String key in keys) {
         final dataStr = prefs.getString(key);
@@ -187,7 +187,7 @@ class TemperatureStorageService {
         }
       }
     } catch (e) {
-      print('❌ TEMP STORAGE DEBUG: Error: $e');
+      print('❌ TEMP STORAGE DEBUG: : $e');
     }
   }
 }

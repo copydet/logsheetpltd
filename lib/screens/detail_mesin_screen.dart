@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../app_exports.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -96,7 +96,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
     }
 
     try {
-      // Cancel existing subscription
+      // Batal existing subscription
       _realtimeSubscription?.cancel();
 
       // Reset state
@@ -118,7 +118,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
 
       print('✅ DETAIL: Data refresh completed');
     } catch (e) {
-      print('❌ DETAIL: Error during refresh: $e');
+      print('❌ DETAIL:  during refresh: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -128,9 +128,9 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
     }
   }
 
-  // Initialize real-time data dengan Firestore fallback
+  // Inisialisasi real-time data dengan Firestore fallback
   Future<void> _initializeRealtimeData() async {
-    await _loadLogsheetData(); // Load local/Google Drive data first
+    await _loadLogsheetData(); // Muat local/Google Drive data first
 
     // Try to get real-time data from Firestore
     try {
@@ -149,7 +149,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
           }
         });
 
-        // Setup real-time listener
+        // Pengaturan real-time listener
         _setupRealtimeListener();
       }
     } catch (e) {
@@ -207,7 +207,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
         }
       }
     } catch (e) {
-      print('🔄 DETAIL: Error loading hourly data: $e');
+      print('🔄 DETAIL:  loading hourly data: $e');
     }
   }
 
@@ -275,7 +275,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
         print('🔍 No spreadsheet data available');
       }
     } catch (e) {
-      print('❌ Error reading all today data: $e');
+      print('❌  reading all today data: $e');
 
       // Fallback: gunakan data logsheet yang sudah ada jika ada error
       if (logsheetData.isNotEmpty) {
@@ -291,7 +291,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
     return todayData;
   }
 
-  // Load data real-time dari spreadsheet existing data
+  // Muat data real-time dari spreadsheet existing data
   Future<void> _loadRealTimeData() async {
     if (widget.fileId.isEmpty) {
       print('⚠️ No fileId available for real-time data');
@@ -313,7 +313,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
         print('⚠️ No logsheet data available for real-time parsing');
       }
     } catch (e) {
-      print('❌ Error loading real-time data: $e');
+      print('❌  loading real-time data: $e');
     }
   }
 
@@ -453,7 +453,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
           print('🔄 DETAIL: Spreadsheet data is empty');
         }
       } catch (e) {
-        print('🔄 DETAIL: Error loading from spreadsheet: $e');
+        print('🔄 DETAIL:  loading from spreadsheet: $e');
         // Jika gagal ambil dari spreadsheet, gunakan data dari storage
       }
 
@@ -464,7 +464,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
         });
       }
 
-      // Load real-time data setelah logsheet data dimuat
+      // Muat real-time data setelah logsheet data dimuat
       if (logsheetData.isNotEmpty) {
         await _loadRealTimeData();
         await _loadAllHourlyData(); // NEW: Load semua data hourly untuk chart
@@ -547,7 +547,7 @@ class _DetailMesinScreenState extends State<DetailMesinScreen>
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Loading indicator
+                    // Muating indicator
                     if (isLoading)
                       const Center(
                         child: Padding(

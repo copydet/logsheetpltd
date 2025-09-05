@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../utils/firestore_collection_utils.dart';
 
@@ -8,7 +8,7 @@ class FirestoreRealtimeService {
   static final Map<String, StreamSubscription<QuerySnapshot>> _activeListeners =
       {};
 
-  /// Get latest data for dashboard (semua generators)
+  /// Ambil latest data for dashboard (semua generators)
   static Future<Map<String, Map<String, dynamic>>> getLatestDataForDashboard(
     List<String> generatorNames,
   ) async {
@@ -22,10 +22,12 @@ class FirestoreRealtimeService {
 
       for (final generatorName in generatorNames) {
         try {
-          // Get collection name for this generator
-          final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
-          
-          // Get latest data for today for this generator
+          // Ambil collection name for this generator
+          final collectionName = FirestoreCollectionUtils.getCollectionName(
+            generatorName,
+          );
+
+          // Ambil latest data for today for this generator
           final query = await _firestore
               .collection(collectionName)
               .where('date', isEqualTo: todayStr)
@@ -58,7 +60,7 @@ class FirestoreRealtimeService {
             };
           }
         } catch (e) {
-          print('❌ FIRESTORE: Error getting data for $generatorName: $e');
+          print('❌ FIRESTORE:  getting data for $generatorName: $e');
           result[generatorName] = {
             'generatorName': generatorName,
             'hasData': false,
@@ -70,12 +72,12 @@ class FirestoreRealtimeService {
 
       return result;
     } catch (e) {
-      print('❌ FIRESTORE: Error getting dashboard data: $e');
+      print('❌ FIRESTORE:  getting dashboard data: $e');
       return {};
     }
   }
 
-  /// Get detailed data for specific generator (untuk detail screen)
+  /// Ambil detailed data for specific generator (untuk detail screen)
   static Future<List<Map<String, dynamic>>> getDetailedDataForGenerator(
     String generatorName, {
     int daysBack = 1,
@@ -86,9 +88,11 @@ class FirestoreRealtimeService {
       // 🔧 FIX: Sederhanakan query untuk menghindari composite index requirement
       // Gunakan query yang lebih sederhana dan filter di client side
       QuerySnapshot query;
-      
-      // Get collection name for this generator
-      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+
+      // Ambil collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(
+        generatorName,
+      );
 
       try {
         // Coba query dengan orderBy terlebih dahulu
@@ -106,10 +110,7 @@ class FirestoreRealtimeService {
 
         try {
           // Fallback ke query tanpa orderBy
-          query = await _firestore
-              .collection(collectionName)
-              .limit(20)
-              .get();
+          query = await _firestore.collection(collectionName).limit(20).get();
 
           print('✅ FIRESTORE: Using simple query without orderBy');
         } catch (simpleError) {
@@ -168,12 +169,12 @@ class FirestoreRealtimeService {
       );
       return result;
     } catch (e) {
-      print('❌ FIRESTORE: Error getting detailed data for $generatorName: $e');
+      print('❌ FIRESTORE:  getting detailed data for $generatorName: $e');
       return [];
     }
   }
 
-  /// Setup real-time listener for dashboard
+  /// Pengaturan real-time listener for dashboard
   static StreamSubscription<QuerySnapshot>? listenToRealtimeUpdates(
     List<String> generatorNames,
     Function(Map<String, Map<String, dynamic>>) onUpdate,
@@ -188,41 +189,46 @@ class FirestoreRealtimeService {
       // With separate collections, we need to set up listeners for each generator
       // For now, we'll listen to all collections and merge the updates
       // In a production setup, this could be optimized with Firestore collection group queries
-      
-      // Setup listeners for each collection and merge results
+
+      // Pengaturan listeners for each collection and merge results
       Map<String, Map<String, dynamic>> allUpdates = {};
-      
+
       for (final generatorName in generatorNames) {
-        final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
-        
+        final collectionName = FirestoreCollectionUtils.getCollectionName(
+          generatorName,
+        );
+
         _firestore
             .collection(collectionName)
             .where('date', isEqualTo: todayStr)
             .snapshots()
             .listen(
               (snapshot) {
-                // Handle individual collection update
+                // Tangani individual collection update
                 Map<String, Map<String, dynamic>> generatorUpdate = {};
                 _handleRealtimeUpdate(snapshot, [generatorName], (updates) {
                   generatorUpdate.addAll(updates);
                 });
-                
+
                 // Merge with all updates
                 allUpdates.addAll(generatorUpdate);
-                
+
                 // Call main update handler with merged data
                 onUpdate(allUpdates);
               },
               onError: (error) {
-                print('❌ FIRESTORE: Real-time listener error for $collectionName: $error');
+                print(
+                  '❌ FIRESTORE: Real-time listener error for $collectionName: $error',
+                );
               },
             );
       }
 
-      // Return first collection listener for compatibility
+      // Kembalikan first collection listener for compatibility
       // Note: In production, this should be handled differently
-      final firstGeneratorCollection = FirestoreCollectionUtils.getCollectionName(generatorNames.first);
-      
+      final firstGeneratorCollection =
+          FirestoreCollectionUtils.getCollectionName(generatorNames.first);
+
       return _firestore
           .collection(firstGeneratorCollection)
           .where('date', isEqualTo: todayStr)
@@ -236,12 +242,12 @@ class FirestoreRealtimeService {
             },
           );
     } catch (e) {
-      print('❌ FIRESTORE: Error setting up real-time listener: $e');
+      print('❌ FIRESTORE:  setting up real-time listener: $e');
       return null;
     }
   }
 
-  /// Handle real-time updates
+  /// Tangani real-time updates
   static void _handleRealtimeUpdate(
     QuerySnapshot snapshot,
     List<String> generatorNames,
@@ -274,7 +280,7 @@ class FirestoreRealtimeService {
         }
       }
 
-      // Convert to update format
+      // Ubah to update format
       for (final entry in latestByGenerator.entries) {
         final generatorName = entry.key;
         final doc = entry.value;
@@ -293,7 +299,7 @@ class FirestoreRealtimeService {
         };
       }
 
-      // Add empty data for generators not found
+      // Tambah empty data for generators not found
       for (final generatorName in generatorNames) {
         if (!updates.containsKey(generatorName)) {
           updates[generatorName] = {
@@ -308,11 +314,11 @@ class FirestoreRealtimeService {
       print('🔄 FIRESTORE: Real-time update for ${updates.length} generators');
       onUpdate(updates);
     } catch (e) {
-      print('❌ FIRESTORE: Error handling real-time update: $e');
+      print('❌ FIRESTORE:  handling real-time update: $e');
     }
   }
 
-  /// Setup listener for specific generator (detail screen)
+  /// Pengaturan listener for specific generator (detail screen)
   static StreamSubscription<QuerySnapshot>? listenToGeneratorUpdates(
     String generatorName,
     Function(List<Map<String, dynamic>>) onUpdate,
@@ -326,11 +332,13 @@ class FirestoreRealtimeService {
 
       final listenerId = 'generator_$generatorName';
 
-      // Cancel existing listener
+      // Batal existing listener
       _activeListeners[listenerId]?.cancel();
 
-      // Get collection name for this generator
-      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+      // Ambil collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(
+        generatorName,
+      );
 
       _activeListeners[listenerId] = _firestore
           .collection(collectionName)
@@ -347,12 +355,12 @@ class FirestoreRealtimeService {
 
       return _activeListeners[listenerId];
     } catch (e) {
-      print('❌ FIRESTORE: Error setting up generator listener: $e');
+      print('❌ FIRESTORE:  setting up generator listener: $e');
       return null;
     }
   }
 
-  /// Handle generator-specific updates
+  /// Tangani generator-specific updates
   static void _handleGeneratorUpdate(
     QuerySnapshot snapshot,
     String generatorName,
@@ -390,18 +398,18 @@ class FirestoreRealtimeService {
       );
       onUpdate(updates);
     } catch (e) {
-      print('❌ FIRESTORE: Error handling generator update: $e');
+      print('❌ FIRESTORE:  handling generator update: $e');
     }
   }
 
-  /// Cancel specific listener
+  /// Batal specific listener
   static void cancelListener(String listenerId) {
     _activeListeners[listenerId]?.cancel();
     _activeListeners.remove(listenerId);
     print('🔇 FIRESTORE: Cancelled listener: $listenerId');
   }
 
-  /// Cancel all listeners
+  /// Batal all listeners
   static void cancelAllListeners() {
     for (final listener in _activeListeners.values) {
       listener.cancel();
@@ -410,18 +418,18 @@ class FirestoreRealtimeService {
     print('🔇 FIRESTORE: Cancelled all listeners');
   }
 
-  /// Get connection status
+  /// Ambil connection status
   static Future<bool> checkConnection() async {
     try {
       await _firestore.collection('_connection_test').limit(1).get();
       return true;
     } catch (e) {
-      print('❌ FIRESTORE: Connection check failed: $e');
+      print('❌ FIRESTORE: Connection check : $e');
       return false;
     }
   }
 
-  /// Get temperature data for chart from Firestore (last 12 hours)
+  /// Ambil temperature data for chart from Firestore (last 12 hours)
   static Future<List<Map<String, dynamic>>> getTemperatureDataForChart(
     String generatorName,
   ) async {
@@ -434,10 +442,12 @@ class FirestoreRealtimeService {
       final todayStr =
           '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-      // Get collection name for this generator
-      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+      // Ambil collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(
+        generatorName,
+      );
 
-      // Get all data for today for this generator, ordered by timestamp
+      // Ambil all data for today for this generator, ordered by timestamp
       final query = await _firestore
           .collection(collectionName)
           .where('date', isEqualTo: todayStr)
@@ -460,7 +470,7 @@ class FirestoreRealtimeService {
             // Extract hour from timestamp
             final hour = syncedAt.hour;
 
-            // Create temperature record with hour information
+            // Buat temperature record with hour information
             temperatureData.add({
               'hour': hour,
               'timestamp': syncedAt.toIso8601String(),
@@ -487,7 +497,7 @@ class FirestoreRealtimeService {
 
       return temperatureData;
     } catch (e) {
-      print('❌ FIRESTORE: Error getting temperature data: $e');
+      print('❌ FIRESTORE:  getting temperature data: $e');
       return [];
     }
   }

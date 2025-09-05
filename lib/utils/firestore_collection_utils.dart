@@ -1,6 +1,6 @@
-/// Utility functions for Firestore collection management
+﻿/// Utility functions for Firestore collection management
 class FirestoreCollectionUtils {
-  /// Convert generator name to collection name
+  /// Ubah generator name to collection name
   /// "Mitsubishi #1" -> "mitsubishi_1"
   /// "Mitsubishi #2" -> "mitsubishi_2"
   static String getCollectionName(String generatorName) {
@@ -11,17 +11,12 @@ class FirestoreCollectionUtils {
         .replaceAll(RegExp(r'[^a-z0-9_]'), '');
   }
 
-  /// Get all generator collection names
+  /// Ambil all generator collection names
   static List<String> getAllCollectionNames() {
-    return [
-      'mitsubishi_1',
-      'mitsubishi_2', 
-      'mitsubishi_3',
-      'mitsubishi_4',
-    ];
+    return ['mitsubishi_1', 'mitsubishi_2', 'mitsubishi_3', 'mitsubishi_4'];
   }
 
-  /// Convert collection name back to generator name
+  /// Ubah collection name back to generator name
   /// "mitsubishi_1" -> "Mitsubishi #1"
   static String getGeneratorName(String collectionName) {
     switch (collectionName) {
@@ -42,7 +37,7 @@ class FirestoreCollectionUtils {
     }
   }
 
-  /// Get collection name for a specific generator ID
+  /// Ambil collection name for a specific generator ID
   static String getCollectionNameById(int generatorId) {
     switch (generatorId) {
       case 1:
@@ -58,7 +53,7 @@ class FirestoreCollectionUtils {
     }
   }
 
-  /// Validate collection name
+  /// Validasi collection name
   static bool isValidCollectionName(String collectionName) {
     return getAllCollectionNames().contains(collectionName);
   }

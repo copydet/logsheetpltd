@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import '../models/logsheet_data.dart';
 import '../models/generator.dart';
 
@@ -9,14 +9,14 @@ class LogsheetState with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  // Getters
+  // Ambilters
   LogsheetData? get currentData => _currentData;
   bool get isEditMode => _isEditMode;
   bool get isDataLocked => _isDataLocked;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Setters
+  // Aturters
   void setCurrentData(LogsheetData? data) {
     _currentData = data;
     notifyListeners();
@@ -63,13 +63,13 @@ class GeneratorState with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  // Getters
+  // Ambilters
   List<Generator> get generators => _generators;
   Generator? get selectedGenerator => _selectedGenerator;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Setters
+  // Aturters
   void setGenerators(List<Generator> generators) {
     _generators = generators;
     notifyListeners();

@@ -1,4 +1,4 @@
-/// ============================================================================
+﻿/// ============================================================================
 /// GENERATOR MODEL
 /// ============================================================================
 /// Model untuk generator data di SQLite database
@@ -182,7 +182,7 @@ class TemperatureData {
     return map;
   }
 
-  /// Get temperature map untuk kompatibilitas dengan existing code
+  /// Ambil temperature map untuk kompatibilitas dengan existing code
   Map<String, double> get temperatureMap => {
     'waterTemp': waterTemp,
     'lubeOilTemp': lubeOilTemp,

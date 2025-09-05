@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'auth_service.dart';
 
@@ -28,7 +28,7 @@ class FormCollaborationService {
     };
   }
 
-  /// Start editing session (claim form)
+  /// Mulai editing session (claim form)
   static Future<bool> startEditingSession({
     required String generatorName,
     required int hour,
@@ -77,11 +77,11 @@ class FormCollaborationService {
           );
 
       print(
-        '✅ COLLABORATION: Started editing session for $generatorName hour $hour',
+        '✅ COLLABORATION: Sesi editing dimulai for $generatorName hour $hour',
       );
       return true;
     } catch (e) {
-      print('❌ COLLABORATION: Error starting editing session: $e');
+      print('❌ COLLABORATION:  starting editing session: $e');
       return false;
     }
   }
@@ -102,11 +102,11 @@ class FormCollaborationService {
           .doc(sessionId)
           .update({'lastActivity': FieldValue.serverTimestamp()});
     } catch (e) {
-      print('❌ COLLABORATION: Error updating activity: $e');
+      print('❌ COLLABORATION:  updating activity: $e');
     }
   }
 
-  /// End editing session
+  /// Selesai editing session
   static Future<void> endEditingSession({
     required String generatorName,
     required int hour,
@@ -123,11 +123,11 @@ class FormCollaborationService {
         '✅ COLLABORATION: Ended editing session for $generatorName hour $hour',
       );
     } catch (e) {
-      print('❌ COLLABORATION: Error ending editing session: $e');
+      print('❌ COLLABORATION:  ending editing session: $e');
     }
   }
 
-  /// Listen for other users editing the same form
+  /// Dengar for other users editing the same form
   static StreamSubscription<DocumentSnapshot>? listenForCollaborators({
     required String generatorName,
     required int hour,
@@ -149,7 +149,7 @@ class FormCollaborationService {
         });
   }
 
-  /// Save form draft for real-time sharing
+  /// Simpan form draft for real-time sharing
   static Future<void> saveFormDraft({
     required String generatorName,
     required int hour,
@@ -170,13 +170,13 @@ class FormCollaborationService {
         'lastModified': FieldValue.serverTimestamp(),
       });
 
-      print('💾 COLLABORATION: Saved draft for $generatorName hour $hour');
+      print('💾 : Saved draft for $generatorName hour $hour');
     } catch (e) {
-      print('❌ COLLABORATION: Error saving draft: $e');
+      print('❌ COLLABORATION:  saving draft: $e');
     }
   }
 
-  /// Load form draft
+  /// Muat form draft
   static Future<Map<String, dynamic>?> loadFormDraft({
     required String generatorName,
     required int hour,
@@ -191,17 +191,17 @@ class FormCollaborationService {
 
       if (doc.exists) {
         final data = doc.data()!;
-        print('📖 COLLABORATION: Loaded draft for $generatorName hour $hour');
+        print('📖 : Loaded draft for $generatorName hour $hour');
         return data;
       }
       return null;
     } catch (e) {
-      print('❌ COLLABORATION: Error loading draft: $e');
+      print('❌ COLLABORATION:  loading draft: $e');
       return null;
     }
   }
 
-  /// Listen for form draft changes (real-time collaboration)
+  /// Dengar for form draft changes (real-time collaboration)
   static StreamSubscription<DocumentSnapshot>? listenForDraftChanges({
     required String generatorName,
     required int hour,
@@ -223,12 +223,12 @@ class FormCollaborationService {
         });
   }
 
-  /// Clean up old sessions and drafts
+  /// Bersihkan up old sessions and drafts
   static Future<void> cleanupOldSessions() async {
     try {
       final cutoffTime = DateTime.now().subtract(Duration(minutes: 10));
 
-      // Clean up old sessions
+      // Bersihkan up old sessions
       final oldSessions = await _firestore
           .collection(_activeSessionsCollection)
           .where('lastActivity', isLessThan: Timestamp.fromDate(cutoffTime))
@@ -238,7 +238,7 @@ class FormCollaborationService {
         await doc.reference.delete();
       }
 
-      // Clean up old drafts (older than 24 hours)
+      // Bersihkan up old drafts (older than 24 hours)
       final oldDraftsCutoff = DateTime.now().subtract(Duration(hours: 24));
       final oldDrafts = await _firestore
           .collection(_formDraftsCollection)
@@ -256,11 +256,11 @@ class FormCollaborationService {
         '🧹 COLLABORATION: Cleaned up ${oldSessions.docs.length} old sessions and ${oldDrafts.docs.length} old drafts',
       );
     } catch (e) {
-      print('❌ COLLABORATION: Error cleaning up: $e');
+      print('❌ COLLABORATION:  cleaning up: $e');
     }
   }
 
-  /// Check if form is locked by another user
+  /// Cek if form is locked by another user
   static Future<Map<String, dynamic>?> checkFormLock({
     required String generatorName,
     required int hour,
@@ -295,7 +295,7 @@ class FormCollaborationService {
 
       return null; // Form tidak terkunci
     } catch (e) {
-      print('❌ COLLABORATION: Error checking form lock: $e');
+      print('❌ COLLABORATION: Error  form lock: $e');
       return null;
     }
   }
@@ -313,9 +313,9 @@ class FormCollaborationService {
           .doc(sessionId)
           .delete();
 
-      print('🔓 COLLABORATION: Force unlocked form $generatorName hour $hour');
+      print('🔓 : Force unlocked form $generatorName hour $hour');
     } catch (e) {
-      print('❌ COLLABORATION: Error force unlocking form: $e');
+      print('❌ COLLABORATION:  force unlocking form: $e');
     }
   }
 }

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// 📊 Service untuk Google Sheets API Integration
@@ -37,7 +37,7 @@ class SheetsApiService {
         throw Exception('Failed to get hourly data: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error getting hourly data: $e');
+      print('❌  getting hourly data: $e');
       rethrow;
     }
   }
@@ -62,7 +62,7 @@ class SheetsApiService {
         );
       }
     } catch (e) {
-      print('❌ Error getting operational status: $e');
+      print('❌  getting operational status: $e');
       rethrow;
     }
   }
@@ -133,7 +133,7 @@ class SheetsApiService {
   // 📊 BATCH DATA OPERATIONS
   // ===========================
 
-  /// Get data untuk multiple hours sekaligus
+  /// Ambil data untuk multiple hours sekaligus
   static Future<List<Map<String, dynamic>>> getMultipleHours(
     String fileId,
     List<int> hours,
@@ -146,19 +146,19 @@ class SheetsApiService {
           final hourlyData = await getHourlyData(fileId, hour);
           results.add(hourlyData);
         } catch (e) {
-          print('⚠️ Failed to get data for hour $hour: $e');
+          print('⚠️  to get data for hour $hour: $e');
           // Continue dengan hour berikutnya
         }
       }
 
       return results;
     } catch (e) {
-      print('❌ Error getting multiple hours data: $e');
+      print('❌  getting multiple hours data: $e');
       rethrow;
     }
   }
 
-  /// Get data untuk shift tertentu (pagi, siang, malam)
+  /// Ambil data untuk shift tertentu (pagi, siang, malam)
   static Future<List<Map<String, dynamic>>> getShiftData(
     String fileId,
     String shift,
@@ -186,7 +186,7 @@ class SheetsApiService {
   // 🎯 HELPER METHODS
   // ===========================
 
-  /// Check apakah generator sedang running berdasarkan RPM
+  /// Cek apakah generator sedang running berdasarkan RPM
   static bool isGeneratorRunning(Map<String, dynamic> hourlyData) {
     try {
       final rpm = double.tryParse(hourlyData['rpm']?.toString() ?? '0') ?? 0;
@@ -196,7 +196,7 @@ class SheetsApiService {
     }
   }
 
-  /// Check apakah parameter operasional dalam range normal
+  /// Cek apakah parameter operasional dalam range normal
   static bool isOperationalNormal(Map<String, dynamic> operationalData) {
     try {
       final rpm =
@@ -218,7 +218,7 @@ class SheetsApiService {
     }
   }
 
-  /// Get performance level berdasarkan load
+  /// Ambil performance level berdasarkan load
   static String getPerformanceLevel(Map<String, dynamic> hourlyData) {
     try {
       final load = double.tryParse(hourlyData['beban']?.toString() ?? '0') ?? 0;
@@ -232,7 +232,7 @@ class SheetsApiService {
     }
   }
 
-  /// Convert jam ke row number sesuai logsheet structure
+  /// Ubah jam ke row number sesuai logsheet structure
   static int hourToRow(int hour) {
     if (hour >= 10 && hour <= 23) {
       return 13 + (hour - 10); // Row 13-26 untuk jam 10-23
@@ -241,7 +241,7 @@ class SheetsApiService {
     }
   }
 
-  /// Convert row number ke jam
+  /// Ubah row number ke jam
   static int rowToHour(int row) {
     if (row >= 13 && row <= 26) {
       return 10 + (row - 13); // Jam 10-23

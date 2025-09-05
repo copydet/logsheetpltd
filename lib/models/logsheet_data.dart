@@ -1,4 +1,4 @@
-class LogsheetData {
+﻿class LogsheetData {
   final String generatorName;
   final double jamOperasi;
   final double rpm;

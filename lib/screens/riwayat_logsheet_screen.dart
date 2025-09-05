@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../app_exports.dart';
 
 class RiwayatLogsheetScreen extends StatefulWidget {
@@ -47,7 +47,7 @@ class _RiwayatLogsheetScreenState extends State<RiwayatLogsheetScreen> {
           final todayCheck = await HistoricalLogsheetService.checkTodayData(
             generatorName,
           );
-          print('Today check result: $todayCheck');
+          print('Today check : $todayCheck');
 
           // Coba ambil data real dari API untuk menghitung jumlah logsheet
           final response = await RestApiService.getGeneratorDetails(

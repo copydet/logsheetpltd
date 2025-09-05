@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/shift_photo_service.dart';
 import '../widgets/shift_photo_upload_widget.dart';
 
@@ -36,7 +36,7 @@ class _ShiftPhotoSettingsPageState extends State<ShiftPhotoSettingsPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ SETTINGS: Error loading photos: $e');
+      print('❌ SETTINGS:  loading photos: $e');
       setState(() {
         _isLoading = false;
       });

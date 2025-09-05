@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../widgets/temperature_chart_widget.dart';
 import '../widgets/winding_temperature_chart_widget.dart';
 

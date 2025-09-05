@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/firebase_user_model.dart';
@@ -32,16 +32,16 @@ class AuthService {
 
       if (userCredential.user != null) {
         final uid = userCredential.user!.uid;
-        print('🔐 AUTH: Firebase login successful, UID: $uid');
+        print('🔐 AUTH: Firebase login ful, UID: $uid');
 
-        // Get user profile dari Firestore
+        // Ambil user profile dari Firestore
         final userProfile = await _getUserProfile(uid);
 
         if (userProfile != null) {
           // Update last login
           await _updateLastLogin(uid);
 
-          // Save session
+          // Simpan session
           await _saveUserSession(userProfile);
 
           print('✅ AUTH: Login berhasil untuk ${userProfile.displayName}');
@@ -55,7 +55,7 @@ class AuthService {
 
       return null;
     } on FirebaseAuthException catch (e) {
-      print('❌ AUTH: Firebase Auth Error: ${e.code} - ${e.message}');
+      print('❌ AUTH: Firebase Auth : ${e.code} - ${e.message}');
       switch (e.code) {
         case 'user-not-found':
           print('💡 AUTH: User tidak terdaftar dalam sistem');
@@ -73,11 +73,11 @@ class AuthService {
           print('💡 AUTH: Terlalu banyak percobaan login');
           break;
         default:
-          print('💡 AUTH: Error tidak dikenal: ${e.code}');
+          print('💡 AUTH:  tidak dikenal: ${e.code}');
       }
       return null;
     } catch (e) {
-      print('❌ AUTH: Unexpected error: $e');
+      print('❌ AUTH: Unexpected : $e');
       return null;
     }
   }
@@ -89,11 +89,11 @@ class AuthService {
       await _clearUserSession();
       print('✅ AUTH: Logout berhasil');
     } catch (e) {
-      print('❌ AUTH: Error during logout: $e');
+      print('❌ AUTH:  during logout: $e');
     }
   }
 
-  /// Check if user is currently logged in
+  /// Cek if user is currently logged in
   static Future<bool> isLoggedIn() async {
     try {
       final currentUser = _auth.currentUser;
@@ -104,12 +104,12 @@ class AuthService {
       final userUid = prefs.getString('user_uid');
       return userUid != null;
     } catch (e) {
-      print('❌ AUTH: Error checking login status: $e');
+      print('❌ AUTH: Error  login status: $e');
       return false;
     }
   }
 
-  /// Get current user profile
+  /// Ambil current user profile
   static Future<FirebaseUserModel?> getCurrentUser() async {
     try {
       final currentUser = _auth.currentUser;
@@ -117,12 +117,12 @@ class AuthService {
 
       return await _getUserProfile(currentUser.uid);
     } catch (e) {
-      print('❌ AUTH: Error getting current user: $e');
+      print('❌ AUTH:  getting current user: $e');
       return null;
     }
   }
 
-  /// Get saved session
+  /// Ambil saved session
   static Future<FirebaseUserModel?> getSavedSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -135,7 +135,7 @@ class AuthService {
 
       return null;
     } catch (e) {
-      print('❌ AUTH: Error getting saved session: $e');
+      print('❌ AUTH:  getting saved session: $e');
       return null;
     }
   }
@@ -144,7 +144,7 @@ class AuthService {
   // PRIVATE HELPER METHODS
   // ========================================================================
 
-  /// Convert username to email format for Firebase Auth
+  /// Ubah username to email format for Firebase Auth
   static String _convertUsernameToEmail(String username) {
     if (username.contains('@')) {
       return username; // Already email format
@@ -152,7 +152,7 @@ class AuthService {
     return '$username@pltd.com';
   }
 
-  /// Get user profile dari Firestore berdasarkan berbagai metode pencarian
+  /// Ambil user profile dari Firestore berdasarkan berbagai metode pencarian
   static Future<FirebaseUserModel?> _getUserProfile(String uid) async {
     try {
       print('👤 AUTH: Getting user profile for UID: $uid');
@@ -221,7 +221,7 @@ class AuthService {
       print('💡 AUTH: Please create user profile manually in Firebase Console');
       return null;
     } catch (e) {
-      print('❌ AUTH: Error getting user profile: $e');
+      print('❌ AUTH:  getting user profile: $e');
       return null;
     }
   }
@@ -234,11 +234,11 @@ class AuthService {
       });
       print('📅 AUTH: Last login updated');
     } catch (e) {
-      print('❌ AUTH: Error updating last login: $e');
+      print('❌ AUTH:  updating last login: $e');
     }
   }
 
-  /// Save user session to local storage
+  /// Simpan user session to local storage
   static Future<void> _saveUserSession(FirebaseUserModel user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -248,11 +248,11 @@ class AuthService {
       await prefs.setString('last_activity', DateTime.now().toIso8601String());
       print('💾 AUTH: User session saved');
     } catch (e) {
-      print('❌ AUTH: Error saving user session: $e');
+      print('❌ AUTH:  saving user session: $e');
     }
   }
 
-  /// Clear user session from local storage
+  /// Bersihkan user session from local storage
   static Future<void> _clearUserSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -262,7 +262,7 @@ class AuthService {
       await prefs.remove('last_activity');
       print('🧹 AUTH: User session cleared');
     } catch (e) {
-      print('❌ AUTH: Error clearing user session: $e');
+      print('❌ AUTH:  clearing user session: $e');
     }
   }
 
@@ -278,7 +278,7 @@ class AuthService {
       print('📧 AUTH: Password reset email sent to $email');
       return true;
     } catch (e) {
-      print('❌ AUTH: Error sending password reset email: $e');
+      print('❌ AUTH:  sending password reset email: $e');
       return false;
     }
   }
@@ -287,7 +287,7 @@ class AuthService {
   // USER MANAGEMENT (Admin only)
   // ========================================================================
 
-  /// Create new user (Admin only)
+  /// Buat new user (Admin only)
   static Future<bool> createUser({
     required String email,
     required String password,
@@ -298,7 +298,7 @@ class AuthService {
       print('⚠️ AUTH: User creation requires Firebase Admin SDK');
       return false;
     } catch (e) {
-      print('❌ AUTH: Error creating user: $e');
+      print('❌ AUTH:  creating user: $e');
       return false;
     }
   }
@@ -316,7 +316,7 @@ class AuthService {
       print('✅ AUTH: User profile updated');
       return true;
     } catch (e) {
-      print('❌ AUTH: Error updating user profile: $e');
+      print('❌ AUTH:  updating user profile: $e');
       return false;
     }
   }
@@ -325,7 +325,7 @@ class AuthService {
   // DEBUG METHODS
   // ========================================================================
 
-  /// Get current Firebase user info (for debugging)
+  /// Ambil current Firebase user info (for debugging)
   static Map<String, dynamic>? getFirebaseUserInfo() {
     final user = _auth.currentUser;
     if (user == null) return null;

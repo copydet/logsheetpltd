@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class StorageService {
@@ -31,16 +31,17 @@ class StorageService {
   ) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    
+    final dateKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
     // Simpan dengan key per tanggal untuk konsistensi
     final key = '${_activeFileIdKey}_${generatorName}_$dateKey';
     await prefs.setString(key, fileId);
-    
+
     // Juga simpan tanpa tanggal untuk backward compatibility
     final legacyKey = '${_activeFileIdKey}_$generatorName';
     await prefs.setString(legacyKey, fileId);
-    
+
     print('🗄️ STORAGE: Saved fileId for $generatorName ($dateKey): $fileId');
   }
 
@@ -48,26 +49,31 @@ class StorageService {
   static Future<String?> getActiveFileId(String generatorName) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    
+    final dateKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
     // Coba ambil file ID untuk hari ini dulu
     final todayKey = '${_activeFileIdKey}_${generatorName}_$dateKey';
     final todayFileId = prefs.getString(todayKey);
-    
+
     if (todayFileId != null && todayFileId.isNotEmpty) {
-      print('🗄️ STORAGE: Found today fileId for $generatorName ($dateKey): $todayFileId');
+      print(
+        '🗄️ STORAGE: Found today fileId for $generatorName ($dateKey): $todayFileId',
+      );
       return todayFileId;
     }
-    
+
     // Fallback ke legacy key jika tidak ada file ID hari ini
     final legacyKey = '${_activeFileIdKey}_$generatorName';
     final legacyFileId = prefs.getString(legacyKey);
-    
+
     if (legacyFileId != null && legacyFileId.isNotEmpty) {
-      print('🗄️ STORAGE: Using legacy fileId for $generatorName: $legacyFileId');
+      print(
+        '🗄️ STORAGE: Using legacy fileId for $generatorName: $legacyFileId',
+      );
       return legacyFileId;
     }
-    
+
     print('🗄️ STORAGE: No fileId found for $generatorName on $dateKey');
     return null;
   }
@@ -76,16 +82,19 @@ class StorageService {
   static Future<void> cleanupOldFileIds(String generatorName) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    
+
     // Hapus file ID dari 7 hari yang lalu
     for (int i = 1; i <= 7; i++) {
       final oldDate = today.subtract(Duration(days: i));
-      final oldDateKey = '${oldDate.year}-${oldDate.month.toString().padLeft(2, '0')}-${oldDate.day.toString().padLeft(2, '0')}';
+      final oldDateKey =
+          '${oldDate.year}-${oldDate.month.toString().padLeft(2, '0')}-${oldDate.day.toString().padLeft(2, '0')}';
       final oldKey = '${_activeFileIdKey}_${generatorName}_$oldDateKey';
-      
+
       if (prefs.containsKey(oldKey)) {
         await prefs.remove(oldKey);
-        print('🗄️ CLEANUP: Removed old fileId for $generatorName ($oldDateKey)');
+        print(
+          '🗄️ CLEANUP: Removed old fileId for $generatorName ($oldDateKey)',
+        );
       }
     }
   }
@@ -124,10 +133,7 @@ class StorageService {
         '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
 
     // Daftar generator yang dikenal
-    final generators = [
-      'Mitsubishi #3',
-      'Mitsubishi #4',
-    ];
+    final generators = ['Mitsubishi #3', 'Mitsubishi #4'];
 
     // Hapus cache untuk semua jam hari kemarin (0-23) untuk semua generator
     for (String generator in generators) {
@@ -247,5 +253,4 @@ class StorageService {
     final fileId = await getActiveFileId(generatorName);
     return fileId != null;
   }
-
 }

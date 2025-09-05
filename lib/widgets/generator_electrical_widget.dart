@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../widgets/parameter_card.dart';
 
 class GeneratorElectricalWidget extends StatelessWidget {

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class SpreadsheetService {
@@ -79,7 +79,7 @@ class SpreadsheetService {
           // atau menggunakan API khusus untuk pencarian file
           print('Looking for historical file: $expectedFileName');
 
-          // TODO: Implement file search by name or use dedicated historical data API
+          // TODO: Implementasi file search by name or use dedicated historical data API
           // For now, return empty data
         } catch (e) {
           print('File not found for date: $formattedDate');
@@ -87,7 +87,7 @@ class SpreadsheetService {
         }
       }
     } catch (e) {
-      print('Error getting historical data: $e');
+      print(' getting historical data: $e');
     }
 
     return allHistoricalData;

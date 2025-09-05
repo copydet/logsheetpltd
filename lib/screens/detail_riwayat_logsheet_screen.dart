@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/spreadsheet_service.dart';
 import '../services/storage_service.dart';
@@ -47,13 +47,13 @@ class _DetailRiwayatLogsheetScreenState
         error = null;
       });
 
-      // Load current spreadsheet data
+      // Muat current spreadsheet data
       final currentData = await SpreadsheetService.readSpreadsheetData(
         widget.fileId,
       );
       final currentMapData = SpreadsheetService.convertToMap(currentData);
 
-      // Load historical data from previous days
+      // Muat historical data from previous days
       final historical = await SpreadsheetService.getHistoricalData(
         widget.generatorName,
         daysBack: 7,
@@ -173,7 +173,7 @@ class _DetailRiwayatLogsheetScreenState
         },
       );
 
-      // TODO: Implement actual delete functionality
+      // TODO: Implementasi actual delete functionality
       // This would typically involve:
       // 1. Delete the spreadsheet file using Google Drive API
       // 2. Clear local storage data
@@ -182,7 +182,7 @@ class _DetailRiwayatLogsheetScreenState
       // For now, simulate the delete process
       await Future.delayed(const Duration(seconds: 2));
 
-      // Clear local storage
+      // Bersihkan local storage
       await _clearLocalData();
 
       // Close loading dialog
@@ -232,14 +232,14 @@ class _DetailRiwayatLogsheetScreenState
 
   Future<void> _clearLocalData() async {
     try {
-      // Clear local storage data for this generator
+      // Bersihkan local storage data for this generator
       await StorageService.saveActiveFileId(widget.generatorName, '');
       await StorageService.saveGeneratorStatus(widget.generatorName, false);
       await StorageService.saveLastLogsheetData(widget.generatorName, {});
 
       print('Local data cleared for ${widget.generatorName}');
     } catch (e) {
-      print('Error clearing local data: $e');
+      print(' clearing local data: $e');
       throw e;
     }
   }

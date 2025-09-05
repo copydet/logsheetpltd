@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/firestore_collection_utils.dart';
 
 /// Service untuk mengambil data historis dari Firestore
@@ -15,8 +15,10 @@ class FirestoreHistoricalService {
         '📊 FIRESTORE: Getting daily summary for $generatorName ($daysBack days)',
       );
 
-      // Get collection name for this generator
-      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+      // Ambil collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(
+        generatorName,
+      );
       print('📊 FIRESTORE: Using collection: $collectionName');
 
       final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
@@ -42,10 +44,10 @@ class FirestoreHistoricalService {
           groupedByDate[date] = [];
         }
 
-        // Convert Firestore data to expected format
+        // Ubah Firestore data to expected format
         final logsheetData = data['data'] as Map<String, dynamic>? ?? {};
 
-        // Create formatted entry similar to original format
+        // Buat formatted entry similar to original format
         final entry = {
           'fileId': 'firestore_${generatorName.replaceAll(' ', '_')}_$date',
           'generatorName': generatorName,
@@ -61,7 +63,7 @@ class FirestoreHistoricalService {
         groupedByDate[date]!.add(entry);
       }
 
-      // Create daily summaries
+      // Buat daily summaries
       List<Map<String, dynamic>> dailySummaries = [];
 
       groupedByDate.forEach((date, entries) {
@@ -72,12 +74,12 @@ class FirestoreHistoricalService {
       print('✅ FIRESTORE: Created ${dailySummaries.length} daily summaries');
       return dailySummaries;
     } catch (e) {
-      print('❌ FIRESTORE: Error getting daily summary: $e');
+      print('❌ FIRESTORE:  getting daily summary: $e');
       return [];
     }
   }
 
-  /// Create daily summary from entries
+  /// Buat daily summary from entries
   static Map<String, dynamic> _createDailySummary(
     String date,
     List<Map<String, dynamic>> entries,
@@ -180,7 +182,7 @@ class FirestoreHistoricalService {
     }
   }
 
-  /// Get specific date data for download
+  /// Ambil specific date data for download
   static Future<Map<String, dynamic>?> getDateData(
     String generatorName,
     String date,
@@ -188,8 +190,10 @@ class FirestoreHistoricalService {
     try {
       print('📊 FIRESTORE: Getting data for $generatorName on $date');
 
-      // Get collection name for this generator
-      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+      // Ambil collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(
+        generatorName,
+      );
       print('📊 FIRESTORE: Using collection: $collectionName for download');
 
       final query = await _firestore
@@ -231,7 +235,7 @@ class FirestoreHistoricalService {
         'source': 'firestore',
       };
     } catch (e) {
-      print('❌ FIRESTORE: Error getting date data: $e');
+      print('❌ FIRESTORE:  getting date data: $e');
       return null;
     }
   }

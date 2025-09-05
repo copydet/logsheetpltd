@@ -1,4 +1,4 @@
-class Generator {
+﻿class Generator {
   final int id;
   final String name;
   final String status;

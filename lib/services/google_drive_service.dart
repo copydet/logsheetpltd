@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class GoogleDriveService {
@@ -30,11 +30,11 @@ class GoogleDriveService {
         }
         return [];
       } else {
-        print('Search files error: ${response.statusCode} - ${response.body}');
+        print('Search files : ${response.statusCode} - ${response.body}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('Error searching logsheet files: $e');
+      print(' searching logsheet files: $e');
       return [];
     }
   }
@@ -56,11 +56,11 @@ class GoogleDriveService {
         }
         return [];
       } else {
-        print('List files error: ${response.statusCode} - ${response.body}');
+        print('List files : ${response.statusCode} - ${response.body}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('Error getting all logsheet files: $e');
+      print(' getting all logsheet files: $e');
       return [];
     }
   }
@@ -98,10 +98,10 @@ class GoogleDriveService {
       } else if (response.statusCode == 500) {
         final errorData = jsonDecode(response.body);
         if (errorData['details'] == 'invalid_grant') {
-          print('Authentication expired, retrying in 2 seconds...');
+          print('Authentication expired, ing in 2 seconds...');
           await Future.delayed(Duration(seconds: 2));
 
-          // Retry once
+          // Coba lagi once
           final retryResponse = await http.get(uri);
           if (retryResponse.statusCode == 200) {
             final retryData = jsonDecode(retryResponse.body);
@@ -113,13 +113,13 @@ class GoogleDriveService {
             }
           }
         }
-        print('Find file error: ${response.statusCode} - ${response.body}');
+        print('Find file : ${response.statusCode} - ${response.body}');
       } else {
-        print('Find file error: ${response.statusCode} - ${response.body}');
+        print('Find file : ${response.statusCode} - ${response.body}');
       }
       return null;
     } catch (e) {
-      print('Error finding file by date: $e');
+      print(' finding file by date: $e');
       return null;
     }
   }
@@ -129,7 +129,7 @@ class GoogleDriveService {
     try {
       final uri = Uri.parse('$_baseUrl/file-info/$fileId');
 
-      print('Getting file info for: $fileId');
+      print('Getting file  for: $fileId');
 
       final response = await http.get(uri);
 
@@ -140,11 +140,11 @@ class GoogleDriveService {
           return Map<String, dynamic>.from(data['file']);
         }
       } else {
-        print('Get file info error: ${response.statusCode} - ${response.body}');
+        print('Get file info : ${response.statusCode} - ${response.body}');
       }
       return null;
     } catch (e) {
-      print('Error getting file info: $e');
+      print('Error getting file : $e');
       return null;
     }
   }
@@ -174,7 +174,7 @@ class GoogleDriveService {
       }
       return {'totalFiles': 0, 'totalSize': 0, 'generators': <String>[]};
     } catch (e) {
-      print('Error getting folder stats: $e');
+      print(' getting folder stats: $e');
       return {'totalFiles': 0, 'totalSize': 0, 'generators': <String>[]};
     }
   }
@@ -221,7 +221,7 @@ class GoogleDriveService {
               );
             }
           } catch (e) {
-            print('Error reading file $fileId for date $targetDate: $e');
+            print(' reading file $fileId for date $targetDate: $e');
           }
         } else {
           print('No file found for ${_formatDateForFileName(targetDate)}');
@@ -238,7 +238,7 @@ class GoogleDriveService {
       print('Total historical entries found: ${allData.length}');
       return allData;
     } catch (e) {
-      print('Error getting real historical data: $e');
+      print(' getting real historical data: $e');
       return [];
     }
   }
@@ -255,7 +255,7 @@ class GoogleDriveService {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           if (data['success'] == true && data['data'] != null) {
-            print('✅ Successfully read hourly data from sheets API');
+            print('✅ fully read hourly data from sheets API');
             return _convertHourlyDataToLogsheetFormat(data['data']);
           }
         }
@@ -276,16 +276,16 @@ class GoogleDriveService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['data'] != null) {
-          print('✅ Successfully read logsheet data from standard endpoint');
+          print('✅ fully read logsheet data from standard endpoint');
           // Konversi single data entry menjadi list
           return [data['data']];
         }
       } else {
-        print('❌ Read file error: ${response.statusCode} - ${response.body}');
+        print('❌ Read file : ${response.statusCode} - ${response.body}');
       }
       return [];
     } catch (e) {
-      print('❌ Error reading file data: $e');
+      print('❌  reading file data: $e');
       return [];
     }
   }
@@ -307,7 +307,7 @@ class GoogleDriveService {
           continue;
         }
 
-        // Convert ke format logsheet standar
+        // Ubah ke format logsheet standar
         final logsheetEntry = {
           'generatorName': hourlyApiData['header']?['generatorName'] ?? '',
           'tanggal': hourlyApiData['header']?['date'] ?? '',
@@ -348,10 +348,10 @@ class GoogleDriveService {
         result.add(logsheetEntry);
       }
 
-      print('📊 Converted ${result.length} hourly entries to logsheet format');
+      print('📊 Converted ${result.length} hourly entries to at');
       return result;
     } catch (e) {
-      print('❌ Error converting hourly data: $e');
+      print('❌  converting hourly data: $e');
       return [];
     }
   }
@@ -397,7 +397,7 @@ class GoogleDriveService {
       }
       return null;
     } catch (e) {
-      print('Error extracting date from filename: $e');
+      print(' extracting date from filename: $e');
       return null;
     }
   }
@@ -432,7 +432,7 @@ class GoogleDriveService {
       }
       return null;
     } catch (e) {
-      print('Error parsing date string: $e');
+      print(' parsing date string: $e');
       return null;
     }
   }

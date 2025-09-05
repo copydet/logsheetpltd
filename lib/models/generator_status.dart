@@ -1,4 +1,4 @@
-/// Model untuk sinkronisasi status generator antar device
+﻿/// Model untuk sinkronisasi status generator antar device
 class GeneratorStatus {
   final String generatorName;
   final bool isActive;

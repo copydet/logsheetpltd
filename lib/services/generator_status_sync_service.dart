@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../models/generator_status.dart';
 import '../services/database_storage_service.dart';
@@ -12,17 +12,17 @@ class GeneratorStatusSyncService {
   static StreamSubscription<QuerySnapshot>? _statusListener;
   static String? _deviceId;
 
-  /// Initialize sync service
+  /// Inisialisasi sync service
   static Future<void> initialize() async {
     try {
       _deviceId = await _getDeviceId();
       print('✅ GENERATOR_STATUS: Initialized with device ID: $_deviceId');
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to initialize: $e');
+      print('❌ GENERATOR_STATUS:  to initialize: $e');
     }
   }
 
-  /// Get unique device ID
+  /// Ambil unique device ID
   static Future<String> _getDeviceId() async {
     final prefs = await StorageService.getGeneratorData();
     String? deviceId = prefs['device_id'];
@@ -70,7 +70,7 @@ class GeneratorStatusSyncService {
       );
       return true;
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to upload status: $e');
+      print('❌ GENERATOR_STATUS:  to upload status: $e');
       return false;
     }
   }
@@ -112,12 +112,12 @@ class GeneratorStatusSyncService {
 
       return statuses;
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to download statuses: $e');
+      print('❌ GENERATOR_STATUS:  to download statuses: $e');
       return {};
     }
   }
 
-  /// Setup real-time listener for generator status changes
+  /// Pengaturan real-time listener for generator status changes
   static void setupRealtimeListener(
     List<String> generatorNames,
     Function(String generatorName, bool isActive, String updatedBy)
@@ -170,11 +170,11 @@ class GeneratorStatusSyncService {
         '👂 GENERATOR_STATUS: Real-time listener setup for ${generatorNames.length} generators',
       );
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to setup real-time listener: $e');
+      print('❌ GENERATOR_STATUS:  to setup real-time listener: $e');
     }
   }
 
-  /// Cancel real-time listener
+  /// Batal real-time listener
   static void cancelRealtimeListener() {
     _statusListener?.cancel();
     _statusListener = null;
@@ -218,12 +218,12 @@ class GeneratorStatusSyncService {
       );
       return true;
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to batch upload statuses: $e');
+      print('❌ GENERATOR_STATUS:  to batch upload statuses: $e');
       return false;
     }
   }
 
-  /// Get generator status history
+  /// Ambil generator status history
   static Future<List<GeneratorStatus>> getStatusHistory(
     String generatorName, {
     int limit = 50,
@@ -240,12 +240,12 @@ class GeneratorStatusSyncService {
           .map((doc) => GeneratorStatus.fromFirestore(doc.data()))
           .toList();
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to get status history: $e');
+      print('❌ GENERATOR_STATUS:  to get status history: $e');
       return [];
     }
   }
 
-  /// Check if there are newer statuses from other devices
+  /// Cek if there are newer statuses from other devices
   static Future<bool> hasNewerStatuses(
     Map<String, DateTime> localTimestamps,
   ) async {
@@ -262,7 +262,7 @@ class GeneratorStatusSyncService {
           // Skip if from same device
           if (status.deviceId == _deviceId) continue;
 
-          // Check if remote is newer
+          // Cek if remote is newer
           if (status.lastUpdated.isAfter(entry.value)) {
             return true;
           }
@@ -271,7 +271,7 @@ class GeneratorStatusSyncService {
 
       return false;
     } catch (e) {
-      print('❌ GENERATOR_STATUS: Failed to check newer statuses: $e');
+      print('❌ GENERATOR_STATUS:  to check newer statuses: $e');
       return false;
     }
   }

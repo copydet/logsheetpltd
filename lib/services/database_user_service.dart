@@ -1,4 +1,4 @@
-import 'database_service.dart';
+﻿import 'database_service.dart';
 import '../models/database/database_user_model.dart';
 
 /// ============================================================================
@@ -15,7 +15,7 @@ class DatabaseUserService {
   // USER MANAGEMENT
   // ========================================================================
 
-  /// Add user baru ke database
+  /// Tambah user baru ke database
   static Future<bool> addUser(
     String username,
     String displayName,
@@ -40,12 +40,12 @@ class DatabaseUserService {
       print('✅ USER: User $username berhasil ditambahkan dengan ID: $id');
       return true;
     } catch (e) {
-      print('❌ USER: Error adding user $username: $e');
+      print('❌ USER:  adding user $username: $e');
       return false;
     }
   }
 
-  /// Get semua users dari database
+  /// Ambil semua users dari database
   static Future<List<Map<String, dynamic>>> getUsers() async {
     try {
       final db = await _dbService.database;
@@ -63,7 +63,7 @@ class DatabaseUserService {
       print('✅ USER: Retrieved ${users.length} users');
       return users;
     } catch (e) {
-      print('❌ USER: Error getting users: $e');
+      print('❌ USER:  getting users: $e');
       return [];
     }
   }
@@ -81,12 +81,12 @@ class DatabaseUserService {
 
       return result.isNotEmpty;
     } catch (e) {
-      print('❌ USER: Error checking user existence: $e');
+      print('❌ USER: Error  user existence: $e');
       return false;
     }
   }
 
-  /// Get user detail by username
+  /// Ambil user detail by username
   static Future<Map<String, dynamic>?> getUserByUsername(
     String username,
   ) async {
@@ -108,7 +108,7 @@ class DatabaseUserService {
         'role': user.role,
       };
     } catch (e) {
-      print('❌ USER: Error getting user $username: $e');
+      print('❌ USER:  getting user $username: $e');
       return null;
     }
   }
@@ -143,17 +143,17 @@ class DatabaseUserService {
         return false;
       }
     } catch (e) {
-      print('❌ USER: Error updating user $username: $e');
+      print('❌ USER:  updating user $username: $e');
       return false;
     }
   }
 
-  /// Delete user
+  /// Hapus user
   static Future<bool> deleteUser(String username) async {
     try {
       final db = await _dbService.database;
 
-      // Get user ID for cleanup
+      // Ambil user ID for cleanup
       final userResult = await db.query(
         'users',
         where: 'username = ?',
@@ -168,14 +168,14 @@ class DatabaseUserService {
 
       final userId = userResult.first['id'] as int;
 
-      // Delete user sessions first (foreign key constraint)
+      // Hapus user sessions first (foreign key constraint)
       await db.delete(
         'user_sessions',
         where: 'user_id = ?',
         whereArgs: [userId],
       );
 
-      // Delete user
+      // Hapus user
       final deleted = await db.delete(
         'users',
         where: 'username = ?',
@@ -190,7 +190,7 @@ class DatabaseUserService {
         return false;
       }
     } catch (e) {
-      print('❌ USER: Error deleting user $username: $e');
+      print('❌ USER:  deleting user $username: $e');
       return false;
     }
   }
@@ -209,7 +209,7 @@ class DatabaseUserService {
         return false;
       }
 
-      // Get user ID
+      // Ambil user ID
       final db = await _dbService.database;
       final users = await db.query(
         'users',
@@ -230,7 +230,7 @@ class DatabaseUserService {
         whereArgs: [userId],
       );
 
-      // Create new session
+      // Buat new session
       final session = DatabaseUserSession(
         userId: userId,
         sessionToken: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -242,7 +242,7 @@ class DatabaseUserService {
       print('✅ USER: User $username berhasil login');
       return true;
     } catch (e) {
-      print('❌ USER: Error during login for $username: $e');
+      print('❌ USER:  during login for $username: $e');
       return false;
     }
   }
@@ -256,7 +256,7 @@ class DatabaseUserService {
         return false;
       }
 
-      // Get user ID
+      // Ambil user ID
       final db = await _dbService.database;
       final users = await db.query(
         'users',
@@ -285,17 +285,17 @@ class DatabaseUserService {
         return false;
       }
     } catch (e) {
-      print('❌ USER: Error during logout: $e');
+      print('❌ USER:  during logout: $e');
       return false;
     }
   }
 
-  /// Get current logged in user
+  /// Ambil current logged in user
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
       final db = await _dbService.database;
 
-      // Get active session with user data
+      // Ambil active session with user data
       final result = await db.rawQuery('''
         SELECT u.username, u.display_name, u.role, s.session_token
         FROM user_sessions s
@@ -314,23 +314,23 @@ class DatabaseUserService {
         'role': row['role'],
       };
     } catch (e) {
-      print('❌ USER: Error getting current user: $e');
+      print('❌ USER:  getting current user: $e');
       return null;
     }
   }
 
-  /// Check if user is logged in
+  /// Cek if user is logged in
   static Future<bool> isUserLoggedIn() async {
     try {
       final currentUser = await getCurrentUser();
       return currentUser != null;
     } catch (e) {
-      print('❌ USER: Error checking login status: $e');
+      print('❌ USER: Error  login status: $e');
       return false;
     }
   }
 
-  /// Get active sessions count
+  /// Ambil active sessions count
   static Future<int> getActiveSessionsCount() async {
     try {
       final db = await _dbService.database;
@@ -342,16 +342,16 @@ class DatabaseUserService {
 
       return result.first['count'] as int;
     } catch (e) {
-      print('❌ USER: Error getting active sessions count: $e');
+      print('❌ USER:  getting active sessions count: $e');
       return 0;
     }
   }
 
   // ========================================================================
-  // UTILITY METHODS
+  // Method utilitasS
   // ========================================================================
 
-  /// Get user statistics
+  /// Ambil user statistics
   static Future<Map<String, int>> getUserStats() async {
     try {
       final db = await _dbService.database;
@@ -368,12 +368,12 @@ class DatabaseUserService {
         'activeSessions': activeSessionsResult.first['count'] as int,
       };
     } catch (e) {
-      print('❌ USER: Error getting user stats: $e');
+      print('❌ USER:  getting user stats: $e');
       return {'totalUsers': 0, 'activeSessions': 0};
     }
   }
 
-  /// Clear all user data (untuk testing)
+  /// Bersihkan all user data (untuk testing)
   static Future<bool> clearAllUserData() async {
     try {
       final db = await _dbService.database;
@@ -384,12 +384,12 @@ class DatabaseUserService {
       print('✅ USER: All user data cleared');
       return true;
     } catch (e) {
-      print('❌ USER: Error clearing user data: $e');
+      print('❌ USER:  clearing user data: $e');
       return false;
     }
   }
 
-  /// Initialize dengan default users (jika diperlukan)
+  /// Inisialisasi dengan default users (jika diperlukan)
   static Future<void> initializeDefaultUsers() async {
     try {
       final userCount = await (await _dbService.database).rawQuery(
@@ -398,12 +398,12 @@ class DatabaseUserService {
       final count = userCount.first['count'] as int;
 
       if (count == 0) {
-        // Add default admin user
+        // Tambah default admin user
         await addUser('admin', 'Administrator', 'admin');
         print('✅ USER: Default admin user created');
       }
     } catch (e) {
-      print('❌ USER: Error initializing default users: $e');
+      print('❌ USER:  initializing default users: $e');
     }
   }
 }

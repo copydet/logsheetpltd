@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 /// DATABASE SERVICE
 /// ============================================================================
 /// Core service untuk mengelola SQLite database
-/// Handles: initialization, migrations, connections
+/// Tanganis: initialization, migrations, connections
 /// ============================================================================
 
 class DatabaseService {
@@ -43,7 +43,7 @@ class DatabaseService {
 
   Future<Database> _initDatabase() async {
     try {
-      // Get database path
+      // Ambil database path
       final documentsDirectory = await getApplicationDocumentsDirectory();
       final path = join(documentsDirectory.path, _databaseName);
 
@@ -58,10 +58,10 @@ class DatabaseService {
         onDowngrade: _downgradeDatabase,
       );
 
-      print('🗄️ DATABASE: Successfully initialized');
+      print('🗄️ DATABASE: fully initialized');
       return database;
     } catch (e) {
-      print('❌ DATABASE: Error initializing database: $e');
+      print('❌ DATABASE:  initializing database: $e');
       rethrow;
     }
   }
@@ -73,7 +73,7 @@ class DatabaseService {
   Future<void> _createDatabase(Database db, int version) async {
     print('🗄️ DATABASE: Creating database tables...');
 
-    // Create Users table
+    // Buat Users table
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +85,7 @@ class DatabaseService {
       )
     ''');
 
-    // Create User Sessions table
+    // Buat User Sessions table
     await db.execute('''
       CREATE TABLE user_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,7 +98,7 @@ class DatabaseService {
       )
     ''');
 
-    // Create Generators table
+    // Buat Generators table
     await db.execute('''
       CREATE TABLE generators (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,7 +110,7 @@ class DatabaseService {
       )
     ''');
 
-    // Create Temperature Data table
+    // Buat Temperature Data table
     await db.execute('''
       CREATE TABLE temperature_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -131,7 +131,7 @@ class DatabaseService {
       )
     ''');
 
-    // Create Logsheet Cache table
+    // Buat Logsheet Cache table
     await db.execute('''
       CREATE TABLE logsheet_cache (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,7 +147,7 @@ class DatabaseService {
       )
     ''');
 
-    // Create Settings table
+    // Buat Settings table
     await db.execute('''
       CREATE TABLE settings (
         key TEXT PRIMARY KEY,
@@ -156,7 +156,7 @@ class DatabaseService {
       )
     ''');
 
-    // Create Logsheets Historical Data table
+    // Buat Logsheets Historical Data table
     await db.execute('''
       CREATE TABLE logsheets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,13 +211,13 @@ class DatabaseService {
       )
     ''');
 
-    // Create Indexes for better performance
+    // Buat Indexes for better performance
     await _createIndexes(db);
 
     // Insert default data
     await _insertDefaultData(db);
 
-    print('🗄️ DATABASE: All tables created successfully');
+    print('🗄️ DATABASE: All tables created fully');
   }
 
   // ========================================================================
@@ -360,7 +360,7 @@ class DatabaseService {
         )
       ''');
 
-      // Add indexes for logsheets table
+      // Tambah indexes for logsheets table
       await db.execute(
         'CREATE INDEX idx_logsheets_generator_date ON logsheets(generator_name, date)',
       );
@@ -371,7 +371,7 @@ class DatabaseService {
         'CREATE INDEX idx_logsheets_file_id ON logsheets(file_id)',
       );
 
-      print('🗄️ DATABASE: Logsheets table and indexes created successfully');
+      print('🗄️ DATABASE: Logsheets table and indexes created fully');
     }
 
     // Upgrade from version 2 to 3: Add energy and fuel tracking columns
@@ -398,11 +398,11 @@ class DatabaseService {
     int newVersion,
   ) async {
     print('🗄️ DATABASE: Downgrading from version $oldVersion to $newVersion');
-    // Handle version downgrades here (usually not recommended)
+    // Tangani version downgrades here (usually not recommended)
   }
 
   // ========================================================================
-  // UTILITY METHODS
+  // Method utilitasS
   // ========================================================================
 
   /// Close database connection
@@ -415,7 +415,7 @@ class DatabaseService {
     }
   }
 
-  /// Get database info
+  /// Ambil database info
   Future<Map<String, dynamic>> getDatabaseInfo() async {
     final db = await database;
     final path = db.path;
@@ -424,7 +424,7 @@ class DatabaseService {
     return {'path': path, 'version': version, 'isOpen': db.isOpen};
   }
 
-  /// Check if table exists
+  /// Cek if table exists
   Future<bool> tableExists(String tableName) async {
     final db = await database;
     final result = await db.rawQuery(
@@ -434,7 +434,7 @@ class DatabaseService {
     return result.isNotEmpty;
   }
 
-  /// Get table row count
+  /// Ambil table row count
   Future<int> getTableRowCount(String tableName) async {
     final db = await database;
     final result = await db.rawQuery(
@@ -443,7 +443,7 @@ class DatabaseService {
     return result.first['count'] as int;
   }
 
-  /// Execute raw query with error handling
+  /// Jalankan raw query with error handling
   Future<List<Map<String, dynamic>>> executeQuery(
     String query, [
     List<dynamic>? arguments,
@@ -452,20 +452,20 @@ class DatabaseService {
       final db = await database;
       return await db.rawQuery(query, arguments);
     } catch (e) {
-      print('❌ DATABASE: Error executing query: $e');
+      print('❌ DATABASE:  executing query: $e');
       print('❌ DATABASE: Query: $query');
       rethrow;
     }
   }
 
-  /// Execute raw query with no result
+  /// Jalankan raw query with no result
   Future<void> executeNonQuery(String query, [List<dynamic>? arguments]) async {
     try {
       final db = await database;
       await db.rawQuery(query, arguments);
-      print('🗄️ DATABASE: Query executed successfully');
+      print('🗄️ DATABASE: Query executed fully');
     } catch (e) {
-      print('❌ DATABASE: Error executing non-query: $e');
+      print('❌ DATABASE:  executing non-query: $e');
       print('❌ DATABASE: Query: $query');
       rethrow;
     }
@@ -475,17 +475,17 @@ class DatabaseService {
   // TRANSACTION SUPPORT
   // ========================================================================
 
-  /// Execute multiple operations in a transaction
+  /// Jalankan multiple operations in a transaction
   Future<T> transaction<T>(Future<T> Function(Transaction txn) action) async {
     final db = await database;
     return await db.transaction(action);
   }
 
   // ========================================================================
-  // CLEANUP METHODS
+  // BersihkanUP METHODS
   // ========================================================================
 
-  /// Clean expired cache entries
+  /// Bersihkan expired cache entries
   Future<int> cleanExpiredCache() async {
     final db = await database;
     final result = await db.delete(
@@ -498,7 +498,7 @@ class DatabaseService {
     return result;
   }
 
-  /// Clean old temperature data (older than 30 days)
+  /// Bersihkan old temperature data (older than 30 days)
   Future<int> cleanOldTemperatureData() async {
     final db = await database;
     final cutoffDate = DateTime.now().subtract(const Duration(days: 30));
@@ -521,7 +521,7 @@ class DatabaseService {
   // LOGSHEET HISTORICAL DATA METHODS
   // ========================================================================
 
-  /// Save logsheet data to historical database
+  /// Simpan logsheet data to historical database
   Future<void> saveLogsheetToHistory(
     String fileId,
     String generatorName,
@@ -542,7 +542,7 @@ class DatabaseService {
         dateStr = logsheetData['tanggal'].toString();
         hour = int.tryParse(logsheetData['jam'].toString()) ?? now.hour;
 
-        // Create proper timestamp from form data
+        // Buat proper timestamp from form data
         final formDate = DateTime.tryParse(dateStr);
         if (formDate != null) {
           final formDateTime = DateTime(
@@ -619,7 +619,7 @@ class DatabaseService {
         '💾 DATABASE: Form date: ${logsheetData['tanggal']}, Form hour: ${logsheetData['jam']}',
       );
     } catch (e) {
-      print('❌ DATABASE: Error saving logsheet to history: $e');
+      print('❌ DATABASE:  saving logsheet to history: $e');
     }
   }
 
@@ -633,7 +633,7 @@ class DatabaseService {
       final db = await database;
       final now = DateTime.now();
 
-      // Get current date and hour
+      // Ambil current date and hour
       String dateStr;
       int hour;
 
@@ -646,7 +646,7 @@ class DatabaseService {
         hour = now.hour;
       }
 
-      // Check if record exists for this generator, date, and hour
+      // Cek if record exists for this generator, date, and hour
       final existing = await db.query(
         'logsheets',
         where: 'file_id = ? AND generator_name = ? AND date = ? AND hour = ?',
@@ -680,7 +680,7 @@ class DatabaseService {
         print(
           '⚠️ DATABASE: No existing record found for $generatorName at $dateStr $hour:00, creating new record',
         );
-        
+
         final timestamp = DateTime(
           DateTime.parse(dateStr).year,
           DateTime.parse(dateStr).month,
@@ -708,12 +708,12 @@ class DatabaseService {
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     } catch (e) {
-      print('❌ DATABASE: Error updating energy data: $e');
+      print('❌ DATABASE:  updating energy data: $e');
       rethrow;
     }
   }
 
-  /// Get historical logsheet data for a generator
+  /// Ambil historical logsheet data for a generator
   Future<List<Map<String, dynamic>>> getLogsheetHistory(
     String generatorName, {
     int daysBack = 7,
@@ -734,15 +734,15 @@ class DatabaseService {
         '🗄️ DATABASE: Retrieved ${results.length} historical logsheet records for $generatorName',
       );
 
-      // Convert raw database rows to logsheet data format
+      // Ubah raw database rows to logsheet data format
       return results.map((row) => _convertRowToLogsheetData(row)).toList();
     } catch (e) {
-      print('❌ DATABASE: Error getting logsheet history: $e');
+      print('❌ DATABASE:  getting logsheet history: $e');
       return [];
     }
   }
 
-  /// Get logsheet data for a specific date
+  /// Ambil logsheet data for a specific date
   Future<List<Map<String, dynamic>>> getLogsheetByDate(
     String generatorName,
     DateTime date,
@@ -764,7 +764,7 @@ class DatabaseService {
       );
       return results;
     } catch (e) {
-      print('❌ DATABASE: Error getting logsheet by date: $e');
+      print('❌ DATABASE:  getting logsheet by date: $e');
       return [];
     }
   }
@@ -780,7 +780,7 @@ class DatabaseService {
       print('🗄️ DATABASE: Total logsheet records in database: $count');
       return count;
     } catch (e) {
-      print('❌ DATABASE: Error getting total logsheet count: $e');
+      print('❌ DATABASE:  getting total logsheet count: $e');
       return 0;
     }
   }
@@ -805,16 +805,16 @@ class DatabaseService {
       print('🗄️ DATABASE: Logsheet counts by generator: $counts');
       return counts;
     } catch (e) {
-      print('❌ DATABASE: Error getting logsheet count by generator: $e');
+      print('❌ DATABASE:  getting logsheet count by generator: $e');
       return {};
     }
   }
 
   // ========================================================================
-  // SETTINGS MANAGEMENT (untuk SyncManager)
+  // AturTINGS MANAGEMENT (untuk SyncManager)
   // ========================================================================
 
-  /// Get all settings as a map
+  /// Ambil all settings as a map
   Future<Map<String, String>> getSettings() async {
     try {
       final db = await database;
@@ -827,12 +827,12 @@ class DatabaseService {
 
       return settings;
     } catch (e) {
-      print('❌ DATABASE: Error getting settings: $e');
+      print('❌ DATABASE:  getting settings: $e');
       return {};
     }
   }
 
-  /// Set a single setting
+  /// Atur a single setting
   Future<void> setSetting(String key, String value) async {
     try {
       final db = await database;
@@ -842,11 +842,11 @@ class DatabaseService {
         'updated_at': DateTime.now().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
-      print('❌ DATABASE: Error setting $key: $e');
+      print('❌ DATABASE:  setting $key: $e');
     }
   }
 
-  /// Get logsheet history with limit and date filter (untuk SyncManager)
+  /// Ambil logsheet history with limit and date filter (untuk SyncManager)
   Future<List<Map<String, dynamic>>> getLogsheetHistoryForSync({
     int limit = 1000,
     DateTime? since,
@@ -866,7 +866,7 @@ class DatabaseService {
         [...whereArgs, limit],
       );
 
-      // Convert to format compatible with Firestore
+      // Ubah to format compatible with Firestore
       final formattedResults = results.map((row) {
         return {
           'id': row['id'],
@@ -880,12 +880,12 @@ class DatabaseService {
 
       return formattedResults;
     } catch (e) {
-      print('❌ DATABASE: Error getting logsheet history for sync: $e');
+      print('❌ DATABASE:  getting logsheet history for sync: $e');
       return [];
     }
   }
 
-  /// Convert database row to logsheet data format
+  /// Ubah database row to logsheet data format
   Map<String, dynamic> _convertRowToLogsheetData(Map<String, dynamic> row) {
     return {
       'jamOperasi': row['jam_operasi'],
@@ -925,19 +925,19 @@ class DatabaseService {
     };
   }
 
-  /// Cleanup old data (untuk SyncManager)
+  /// Bersihkanup old data (untuk SyncManager)
   Future<int> cleanupOldData(DateTime cutoffDate) async {
     try {
       final db = await database;
 
-      // Delete old logsheets
+      // Hapus old logsheets
       final deletedLogsheets = await db.delete(
         'logsheets',
         where: 'timestamp < ?',
         whereArgs: [cutoffDate.toIso8601String()],
       );
 
-      // Delete old temperature data
+      // Hapus old temperature data
       final deletedTemp = await db.delete(
         'temperature_data',
         where: 'date < ?',
@@ -946,7 +946,7 @@ class DatabaseService {
         ],
       );
 
-      // Delete expired cache
+      // Hapus expired cache
       final deletedCache = await db.delete(
         'logsheet_cache',
         where: 'expires_at < ?',
@@ -960,12 +960,12 @@ class DatabaseService {
 
       return totalDeleted;
     } catch (e) {
-      print('❌ DATABASE: Error cleaning up old data: $e');
+      print('❌ DATABASE:  cleaning up old data: $e');
       return 0;
     }
   }
 
-  /// Save logsheet from Firestore format (untuk restore)
+  /// Simpan logsheet from Firestore format (untuk restore)
   Future<void> saveLogsheetFromFirestore(
     String generatorName,
     String date,
@@ -978,7 +978,7 @@ class DatabaseService {
       await saveLogsheetToHistory(fileId, generatorName, data);
       print('✅ DATABASE: Restored logsheet for $generatorName on $date');
     } catch (e) {
-      print('❌ DATABASE: Error saving logsheet from Firestore: $e');
+      print('❌ DATABASE:  saving logsheet from Firestore: $e');
     }
   }
 }

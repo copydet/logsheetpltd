@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -34,7 +34,7 @@ class SyncManager {
   List<String> _syncErrors = [];
   String? _deviceId;
 
-  // Getters
+  // Ambilters
   bool get isInitialized => _isInitialized;
   bool get isSyncing => _isSyncing;
   bool get isListening => _isListening;
@@ -45,7 +45,7 @@ class SyncManager {
   List<String> get syncErrors => List.from(_syncErrors);
   String? get deviceId => _deviceId;
 
-  /// Initialize sync manager
+  /// Inisialisasi sync manager
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -55,39 +55,39 @@ class SyncManager {
       // TODO: Initialize Workmanager for background tasks when available
       // await Workmanager().initialize(
       //   callbackDispatcher,
-      //   isInDebugMode: false, // Set to false in production
+      //   isInDebugMode: false, // Atur to false in production
       // );
 
-      // Setup periodic sync (manual for now)
+      // Pengaturan periodic sync (manual for now)
       await _setupPeriodicSync();
 
-      // Setup connectivity monitoring
+      // Pengaturan connectivity monitoring
       await _setupConnectivityMonitoring();
 
-      // Setup real-time listeners for multi-device sync
+      // Pengaturan real-time listeners for multi-device sync
       await _setupRealtimeListeners();
 
-      // Load sync state
+      // Muat sync state
       await _loadSyncState();
 
-      // Get or generate device ID
+      // Ambil or generate device ID
       _deviceId = await _getDeviceId();
 
       _isInitialized = true;
-      print('✅ SYNC: SyncManager initialized successfully');
+      print('✅ SYNC: SyncManager initialized fully');
     } catch (e) {
-      print('❌ SYNC: Failed to initialize SyncManager: $e');
+      print('❌ SYNC:  to initialize SyncManager: $e');
       rethrow;
     }
   }
 
-  /// Setup periodic background sync
+  /// Pengaturan periodic background sync
   Future<void> _setupPeriodicSync() async {
     try {
       // TODO: Setup background sync when workmanager is available
       // For now, we'll rely on manual sync triggers
 
-      // Cancel existing task
+      // Batal existing task
       // await Workmanager().cancelByUniqueName(SYNC_TASK_NAME);
 
       // Register new periodic task
@@ -105,11 +105,11 @@ class SyncManager {
         '✅ SYNC: Periodic sync setup (manual mode) - sync every $SYNC_INTERVAL_MINUTES minutes',
       );
     } catch (e) {
-      print('❌ SYNC: Failed to setup periodic sync: $e');
+      print('❌ SYNC:  to setup periodic sync: $e');
     }
   }
 
-  /// Setup connectivity monitoring
+  /// Pengaturan connectivity monitoring
   Future<void> _setupConnectivityMonitoring() async {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       ConnectivityResult result,
@@ -121,7 +121,7 @@ class SyncManager {
     });
   }
 
-  /// Load sync state from local storage
+  /// Muat sync state from local storage
   Future<void> _loadSyncState() async {
     try {
       final prefs = await _databaseService.getSettings();
@@ -151,11 +151,11 @@ class SyncManager {
         _syncErrors = errorsList.cast<String>();
       }
     } catch (e) {
-      print('⚠️ SYNC: Failed to load sync state: $e');
+      print('⚠️ SYNC:  to load sync state: $e');
     }
   }
 
-  /// Save sync state to local storage
+  /// Simpan sync state to local storage
   Future<void> _saveSyncState() async {
     try {
       await _databaseService.setSetting(
@@ -176,7 +176,7 @@ class SyncManager {
       );
       await _databaseService.setSetting('sync_errors', jsonEncode(_syncErrors));
     } catch (e) {
-      print('⚠️ SYNC: Failed to save sync state: $e');
+      print('⚠️ SYNC:  to save sync state: $e');
     }
   }
 
@@ -199,7 +199,7 @@ class SyncManager {
     }
 
     try {
-      // Check internet connectivity
+      // Cek internet connectivity
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
         print('❌ SYNC: No internet connection for immediate upload');
@@ -239,7 +239,7 @@ class SyncManager {
       );
       return uploaded > 0;
     } catch (e) {
-      print('❌ SYNC: Immediate upload failed: $e');
+      print('❌ SYNC: Immediate upload : $e');
       return false;
     }
   }
@@ -252,7 +252,7 @@ class SyncManager {
     bool success = false;
 
     try {
-      // Check internet connectivity
+      // Cek internet connectivity
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
         print('❌ SYNC: No internet connection');
@@ -277,9 +277,9 @@ class SyncManager {
       await _saveSyncState();
 
       success = true;
-      print('✅ SYNC: Sync completed successfully');
+      print('✅ SYNC: Sync completed fully');
     } catch (e) {
-      print('❌ SYNC: Sync failed: $e');
+      print('❌ SYNC: Sync : $e');
       _addSyncError('Sync failed: $e');
     } finally {
       _isSyncing = false;
@@ -293,7 +293,7 @@ class SyncManager {
     try {
       print('📤 SYNC: Uploading pending logsheets...');
 
-      // Get logsheets from last 7 days
+      // Ambil logsheets from last 7 days
       final cutoffDate = DateTime.now().subtract(Duration(days: 7));
       final logsheets = await _databaseService.getLogsheetHistoryForSync(
         limit: 1000,
@@ -316,7 +316,7 @@ class SyncManager {
       _pendingUploads = logsheets.length - uploaded;
       print('✅ SYNC: Uploaded $uploaded logsheets, ${_pendingUploads} pending');
     } catch (e) {
-      print('❌ SYNC: Failed to upload logsheets: $e');
+      print('❌ SYNC:  to upload logsheets: $e');
       _addSyncError('Upload logsheets failed: $e');
     }
   }
@@ -324,8 +324,10 @@ class SyncManager {
   /// Upload single logsheet to Firestore
   Future<void> _uploadLogsheetToFirestore(Map<String, dynamic> logsheet) async {
     final generatorName = logsheet['generator_name'];
-    final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
-    
+    final collectionName = FirestoreCollectionUtils.getCollectionName(
+      generatorName,
+    );
+
     final docId = '${logsheet['date']}_${logsheet['created_at']}';
 
     final firestoreData = {
@@ -345,7 +347,7 @@ class SyncManager {
         .set(firestoreData, SetOptions(merge: true));
   }
 
-  /// Cleanup old data (both local and cloud)
+  /// Bersihkanup old data (both local and cloud)
   Future<void> _cleanupOldData() async {
     try {
       print('🧹 SYNC: Cleaning up old data...');
@@ -354,31 +356,31 @@ class SyncManager {
         Duration(days: DATA_RETENTION_DAYS),
       );
 
-      // Cleanup local data (older than retention period)
+      // Bersihkanup local data (older than retention period)
       await _databaseService.cleanupOldData(cutoffDate);
 
-      // Cleanup Firestore data
+      // Bersihkanup Firestore data
       await _cleanupFirestoreData(cutoffDate);
 
       print('✅ SYNC: Cleanup completed');
     } catch (e) {
-      print('❌ SYNC: Cleanup failed: $e');
+      print('❌ SYNC: Cleanup : $e');
       _addSyncError('Cleanup failed: $e');
     }
   }
 
-  /// Cleanup old Firestore data
+  /// Bersihkanup old Firestore data
   Future<void> _cleanupFirestoreData(DateTime cutoffDate) async {
     try {
       final cutoffDateStr =
           '${cutoffDate.year.toString().padLeft(4, '0')}-${cutoffDate.month.toString().padLeft(2, '0')}-${cutoffDate.day.toString().padLeft(2, '0')}';
 
-      // Cleanup from all generator collections
+      // Bersihkanup from all generator collections
       final collections = FirestoreCollectionUtils.getAllCollectionNames();
-      
+
       for (final collectionName in collections) {
         print('🧹 SYNC: Cleaning up collection: $collectionName');
-        
+
         final query = await _firestore
             .collection(collectionName)
             .where('date', isLessThan: cutoffDateStr)
@@ -392,15 +394,17 @@ class SyncManager {
 
         if (query.docs.isNotEmpty) {
           await batch.commit();
-          print('🗑️ SYNC: Deleted ${query.docs.length} old documents from $collectionName');
+          print(
+            '🗑️ SYNC: Deleted ${query.docs.length} old documents from $collectionName',
+          );
         }
       }
     } catch (e) {
-      print('❌ SYNC: Firestore cleanup failed: $e');
+      print('❌ SYNC: Firestore cleanup : $e');
     }
   }
 
-  /// Get device ID for tracking
+  /// Ambil device ID for tracking
   Future<String> _getDeviceId() async {
     // For now, use a simple timestamp-based ID
     // In production, you might want to use a more sophisticated device ID
@@ -415,7 +419,7 @@ class SyncManager {
     return deviceId;
   }
 
-  /// Add sync error to tracking
+  /// Tambah sync error to tracking
   void _addSyncError(String error) {
     final timestamp = DateTime.now().toIso8601String();
     _syncErrors.add('[$timestamp] $error');
@@ -436,11 +440,12 @@ class SyncManager {
           '${sinceDate.year.toString().padLeft(4, '0')}-${sinceDate.month.toString().padLeft(2, '0')}-${sinceDate.day.toString().padLeft(2, '0')}';
 
       int restored = 0;
-      
+
       // Query each generator collection
-      for (final collectionName in FirestoreCollectionUtils.getAllCollectionNames()) {
+      for (final collectionName
+          in FirestoreCollectionUtils.getAllCollectionNames()) {
         print('📥 SYNC: Restoring from collection: $collectionName');
-        
+
         final query = await _firestore
             .collection(collectionName)
             .where('date', isGreaterThanOrEqualTo: sinceDateStr)
@@ -454,7 +459,7 @@ class SyncManager {
             await _restoreLogsheetFromFirestore(data);
             restored++;
           } catch (e) {
-            print('❌ SYNC: Failed to restore document ${doc.id}: $e');
+            print('❌ SYNC:  to restore document ${doc.id}: $e');
           }
         }
       }
@@ -462,7 +467,7 @@ class SyncManager {
       print('✅ SYNC: Restored $restored logsheets from Firestore');
       return true;
     } catch (e) {
-      print('❌ SYNC: Data restoration failed: $e');
+      print('❌ SYNC: Data restoration : $e');
       return false;
     }
   }
@@ -476,12 +481,12 @@ class SyncManager {
     );
   }
 
-  /// Setup real-time listeners for multi-device sync
+  /// Pengaturan real-time listeners for multi-device sync
   Future<void> _setupRealtimeListeners() async {
     try {
       print('👂 SYNC: Setting up real-time listeners...');
 
-      // Listen to all generator collections for updates in the last 7 days
+      // Dengar to all generator collections for updates in the last 7 days
       final sevenDaysAgo = DateTime.now().subtract(Duration(days: 7));
       final dateStr = sevenDaysAgo.toIso8601String().split('T')[0];
 
@@ -502,12 +507,12 @@ class SyncManager {
       _isListening = true;
       print('✅ SYNC: Real-time listeners active');
     } catch (e) {
-      print('❌ SYNC: Failed to setup real-time listeners: $e');
+      print('❌ SYNC:  to setup real-time listeners: $e');
       _addSyncError('Failed to setup real-time sync: $e');
     }
   }
 
-  /// Handle real-time updates from Firestore
+  /// Tangani real-time updates from Firestore
   Future<void> _handleFirestoreUpdates(QuerySnapshot snapshot) async {
     if (_deviceId == null) return;
 
@@ -524,7 +529,7 @@ class SyncManager {
           final sourceDeviceId = data['deviceId'] as String?;
           if (sourceDeviceId == _deviceId) continue;
 
-          // Check if this is a newer update
+          // Cek if this is a newer update
           final firestoreTimestamp = data['syncedAt'] as Timestamp?;
           if (firestoreTimestamp != null) {
             final updateTime = firestoreTimestamp.toDate();
@@ -546,22 +551,22 @@ class SyncManager {
         print('🔄 SYNC: Received $newUpdates updates from other devices');
       }
     } catch (e) {
-      print('❌ SYNC: Failed to handle Firestore updates: $e');
+      print('❌ SYNC:  to handle Firestore updates: $e');
       _addSyncError('Failed to process updates from other devices: $e');
     }
   }
 
-  /// Process incoming update from another device
+  /// Proses incoming update from another device
   Future<void> _processIncomingUpdate(Map<String, dynamic> data) async {
     try {
-      // Check if we already have this data locally
+      // Cek if we already have this data locally
       // For now, we'll always update to ensure latest data
-      // TODO: Implement proper conflict resolution based on timestamps
+      // TODO: Implementasi proper conflict resolution based on timestamps
 
       await _restoreLogsheetFromFirestore(data);
       print('📥 SYNC: Updated local data from device ${data['deviceId']}');
     } catch (e) {
-      print('❌ SYNC: Failed to process incoming update: $e');
+      print('❌ SYNC:  to process incoming update: $e');
     }
   }
 
@@ -579,15 +584,15 @@ class SyncManager {
 
       final lastDownload =
           _lastDownloadTime ?? DateTime.now().subtract(Duration(days: 7));
-      
+
       int totalDownloaded = 0;
-      
+
       // Download from all generator collections
       final collections = FirestoreCollectionUtils.getAllCollectionNames();
-      
+
       for (final collectionName in collections) {
-        print('📥 SYNC: Checking collection: $collectionName');
-        
+        print('📥 SYNC:  collection: $collectionName');
+
         final query = await _firestore
             .collection(collectionName)
             .where('syncedAt', isGreaterThan: Timestamp.fromDate(lastDownload))
@@ -605,7 +610,7 @@ class SyncManager {
           await _processIncomingUpdate(data);
           downloaded++;
         }
-        
+
         totalDownloaded += downloaded;
         print('📥 SYNC: Downloaded $downloaded updates from $collectionName');
       }
@@ -617,7 +622,7 @@ class SyncManager {
       print('✅ SYNC: Downloaded $totalDownloaded updates from other devices');
       return true;
     } catch (e) {
-      print('❌ SYNC: Failed to download updates: $e');
+      print('❌ SYNC:  to download updates: $e');
       _addSyncError('Download updates failed: $e');
       return false;
     } finally {
@@ -653,7 +658,7 @@ class SyncManager {
       
 //       return Future.value(true);
 //     } catch (e) {
-//       print('❌ BACKGROUND: Task failed: $e');
+//       print('❌ BACKGROUND: Task : $e');
 //       return Future.value(false);
 //     }
 //   });

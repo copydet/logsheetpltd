@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class WindingTemperatureChartWidget extends StatelessWidget {
   final String tempU;
