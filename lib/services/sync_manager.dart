@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 // import 'package:workmanager/workmanager.dart'; // Disabled for now
 import 'database_service.dart';
+import '../utils/firestore_collection_utils.dart';
 
 class SyncManager {
   static final SyncManager _instance = SyncManager._internal();
@@ -322,11 +323,13 @@ class SyncManager {
 
   /// Upload single logsheet to Firestore
   Future<void> _uploadLogsheetToFirestore(Map<String, dynamic> logsheet) async {
-    final docId =
-        '${logsheet['generator_name']}_${logsheet['date']}_${logsheet['created_at']}';
+    final generatorName = logsheet['generator_name'];
+    final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+    
+    final docId = '${logsheet['date']}_${logsheet['created_at']}';
 
     final firestoreData = {
-      'generatorName': logsheet['generator_name'],
+      'generatorName': generatorName,
       'date': logsheet['date'],
       'data': logsheet['data'], // Already a Map from _convertRowToLogsheetData
       'syncedAt': FieldValue.serverTimestamp(),
@@ -334,8 +337,10 @@ class SyncManager {
       'version': 1,
     };
 
+    print('📤 SYNC: Uploading to collection: $collectionName, docId: $docId');
+
     await _firestore
-        .collection('logsheets')
+        .collection(collectionName)
         .doc(docId)
         .set(firestoreData, SetOptions(merge: true));
   }
@@ -368,25 +373,30 @@ class SyncManager {
       final cutoffDateStr =
           '${cutoffDate.year.toString().padLeft(4, '0')}-${cutoffDate.month.toString().padLeft(2, '0')}-${cutoffDate.day.toString().padLeft(2, '0')}';
 
-      final query = await _firestore
-          .collection('logsheets')
-          .where('date', isLessThan: cutoffDateStr)
-          .limit(500) // Batch limit
-          .get();
+      // Cleanup from all generator collections
+      final collections = FirestoreCollectionUtils.getAllCollectionNames();
+      
+      for (final collectionName in collections) {
+        print('🧹 SYNC: Cleaning up collection: $collectionName');
+        
+        final query = await _firestore
+            .collection(collectionName)
+            .where('date', isLessThan: cutoffDateStr)
+            .limit(500) // Batch limit
+            .get();
 
-      final batch = _firestore.batch();
-      for (final doc in query.docs) {
-        batch.delete(doc.reference);
-      }
+        final batch = _firestore.batch();
+        for (final doc in query.docs) {
+          batch.delete(doc.reference);
+        }
 
-      if (query.docs.isNotEmpty) {
-        await batch.commit();
-        print(
-          '🗑️ SYNC: Deleted ${query.docs.length} old documents from Firestore',
-        );
+        if (query.docs.isNotEmpty) {
+          await batch.commit();
+          print('🗑️ SYNC: Deleted ${query.docs.length} old documents from $collectionName');
+        }
       }
     } catch (e) {
-      print('❌ SYNC: Failed to cleanup Firestore: $e');
+      print('❌ SYNC: Firestore cleanup failed: $e');
     }
   }
 
@@ -425,21 +435,27 @@ class SyncManager {
       final sinceDateStr =
           '${sinceDate.year.toString().padLeft(4, '0')}-${sinceDate.month.toString().padLeft(2, '0')}-${sinceDate.day.toString().padLeft(2, '0')}';
 
-      final query = await _firestore
-          .collection('logsheets')
-          .where('date', isGreaterThanOrEqualTo: sinceDateStr)
-          .orderBy('date', descending: true)
-          .limit(1000)
-          .get();
-
       int restored = 0;
-      for (final doc in query.docs) {
-        try {
-          final data = doc.data();
-          await _restoreLogsheetFromFirestore(data);
-          restored++;
-        } catch (e) {
-          print('❌ SYNC: Failed to restore document ${doc.id}: $e');
+      
+      // Query each generator collection
+      for (final collectionName in FirestoreCollectionUtils.getAllCollectionNames()) {
+        print('📥 SYNC: Restoring from collection: $collectionName');
+        
+        final query = await _firestore
+            .collection(collectionName)
+            .where('date', isGreaterThanOrEqualTo: sinceDateStr)
+            .orderBy('date', descending: true)
+            .limit(250) // 250 per collection = 1000 total max
+            .get();
+
+        for (final doc in query.docs) {
+          try {
+            final data = doc.data();
+            await _restoreLogsheetFromFirestore(data);
+            restored++;
+          } catch (e) {
+            print('❌ SYNC: Failed to restore document ${doc.id}: $e');
+          }
         }
       }
 
@@ -465,12 +481,14 @@ class SyncManager {
     try {
       print('👂 SYNC: Setting up real-time listeners...');
 
-      // Listen to logsheets updated in the last 7 days
+      // Listen to all generator collections for updates in the last 7 days
       final sevenDaysAgo = DateTime.now().subtract(Duration(days: 7));
       final dateStr = sevenDaysAgo.toIso8601String().split('T')[0];
 
+      // Note: We'll listen to mitsubishi_1 for now as a primary collection
+      // In the future, we could set up separate listeners for each collection
       _firestoreListener = _firestore
-          .collection('logsheets')
+          .collection('mitsubishi_1')
           .where('date', isGreaterThanOrEqualTo: dateStr)
           .snapshots()
           .listen(
@@ -561,29 +579,42 @@ class SyncManager {
 
       final lastDownload =
           _lastDownloadTime ?? DateTime.now().subtract(Duration(days: 7));
-      final query = await _firestore
-          .collection('logsheets')
-          .where('syncedAt', isGreaterThan: Timestamp.fromDate(lastDownload))
-          .orderBy('syncedAt', descending: true)
-          .limit(500)
-          .get();
+      
+      int totalDownloaded = 0;
+      
+      // Download from all generator collections
+      final collections = FirestoreCollectionUtils.getAllCollectionNames();
+      
+      for (final collectionName in collections) {
+        print('📥 SYNC: Checking collection: $collectionName');
+        
+        final query = await _firestore
+            .collection(collectionName)
+            .where('syncedAt', isGreaterThan: Timestamp.fromDate(lastDownload))
+            .orderBy('syncedAt', descending: true)
+            .limit(200)
+            .get();
 
-      int downloaded = 0;
-      for (final doc in query.docs) {
-        final data = doc.data();
+        int downloaded = 0;
+        for (final doc in query.docs) {
+          final data = doc.data();
 
-        // Skip our own updates
-        if (data['deviceId'] == _deviceId) continue;
+          // Skip our own updates
+          if (data['deviceId'] == _deviceId) continue;
 
-        await _processIncomingUpdate(data);
-        downloaded++;
+          await _processIncomingUpdate(data);
+          downloaded++;
+        }
+        
+        totalDownloaded += downloaded;
+        print('📥 SYNC: Downloaded $downloaded updates from $collectionName');
       }
 
       _lastDownloadTime = DateTime.now();
       _newUpdatesFromOthers = 0; // Reset counter after manual download
       await _saveSyncState();
 
-      print('✅ SYNC: Downloaded $downloaded updates from other devices');
+      print('✅ SYNC: Downloaded $totalDownloaded updates from other devices');
       return true;
     } catch (e) {
       print('❌ SYNC: Failed to download updates: $e');

@@ -26,7 +26,7 @@ class _RiwayatLogsheetScreenState extends State<RiwayatLogsheetScreen> {
     });
 
     try {
-      // Daftar nama mesin yang akan ditampilkan
+      // Daftar nama mesin yang akan ditampilkan - SEMUA MESIN
       final List<String> targetGenerators = [
         'Mitsubishi #1',
         'Mitsubishi #2',
@@ -140,28 +140,16 @@ class _RiwayatLogsheetScreenState extends State<RiwayatLogsheetScreen> {
         // Fallback ke data default jika semua gagal
         generators = [
           {
-            'name': 'Mesin Mitsubishi #1',
-            'fileId': 'mitsubishi_1',
-            'logsheetCount': 12,
-            'lastActivity': '2 hari lalu',
-          },
-          {
-            'name': 'Mesin Mitsubishi #2',
-            'fileId': 'mitsubishi_2',
-            'logsheetCount': 8,
-            'lastActivity': '5 hari lalu',
-          },
-          {
             'name': 'Mesin Mitsubishi #3',
             'fileId': 'mitsubishi_3',
-            'logsheetCount': 15,
-            'lastActivity': '1 hari lalu',
+            'logsheetCount': 0,
+            'lastActivity': 'Belum ada data',
           },
           {
             'name': 'Mesin Mitsubishi #4',
             'fileId': 'mitsubishi_4',
-            'logsheetCount': 6,
-            'lastActivity': '1 minggu lalu',
+            'logsheetCount': 0,
+            'lastActivity': 'Belum ada data',
           },
         ];
         isLoading = false;

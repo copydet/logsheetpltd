@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '../utils/firestore_collection_utils.dart';
 
 /// Service untuk real-time data dari Firestore untuk Dashboard dan Detail
 class FirestoreRealtimeService {
@@ -21,10 +22,12 @@ class FirestoreRealtimeService {
 
       for (final generatorName in generatorNames) {
         try {
+          // Get collection name for this generator
+          final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+          
           // Get latest data for today for this generator
           final query = await _firestore
-              .collection('logsheets')
-              .where('generatorName', isEqualTo: generatorName)
+              .collection(collectionName)
               .where('date', isEqualTo: todayStr)
               .orderBy('syncedAt', descending: true)
               .limit(1)
@@ -80,19 +83,17 @@ class FirestoreRealtimeService {
     try {
       print('📊 FIRESTORE: Getting detailed data for $generatorName');
 
-      final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
-      final cutoffDateStr =
-          '${cutoffDate.year.toString().padLeft(4, '0')}-${cutoffDate.month.toString().padLeft(2, '0')}-${cutoffDate.day.toString().padLeft(2, '0')}';
-
       // 🔧 FIX: Sederhanakan query untuk menghindari composite index requirement
       // Gunakan query yang lebih sederhana dan filter di client side
       QuerySnapshot query;
+      
+      // Get collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
 
       try {
         // Coba query dengan orderBy terlebih dahulu
         query = await _firestore
-            .collection('logsheets')
-            .where('generatorName', isEqualTo: generatorName)
+            .collection(collectionName)
             .orderBy('syncedAt', descending: true)
             .limit(50) // Batasi untuk performa
             .get();
@@ -106,8 +107,7 @@ class FirestoreRealtimeService {
         try {
           // Fallback ke query tanpa orderBy
           query = await _firestore
-              .collection('logsheets')
-              .where('generatorName', isEqualTo: generatorName)
+              .collection(collectionName)
               .limit(20)
               .get();
 
@@ -185,13 +185,47 @@ class FirestoreRealtimeService {
       final todayStr =
           '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
+      // With separate collections, we need to set up listeners for each generator
+      // For now, we'll listen to all collections and merge the updates
+      // In a production setup, this could be optimized with Firestore collection group queries
+      
+      // Setup listeners for each collection and merge results
+      Map<String, Map<String, dynamic>> allUpdates = {};
+      
+      for (final generatorName in generatorNames) {
+        final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+        
+        _firestore
+            .collection(collectionName)
+            .where('date', isEqualTo: todayStr)
+            .snapshots()
+            .listen(
+              (snapshot) {
+                // Handle individual collection update
+                Map<String, Map<String, dynamic>> generatorUpdate = {};
+                _handleRealtimeUpdate(snapshot, [generatorName], (updates) {
+                  generatorUpdate.addAll(updates);
+                });
+                
+                // Merge with all updates
+                allUpdates.addAll(generatorUpdate);
+                
+                // Call main update handler with merged data
+                onUpdate(allUpdates);
+              },
+              onError: (error) {
+                print('❌ FIRESTORE: Real-time listener error for $collectionName: $error');
+              },
+            );
+      }
+
+      // Return first collection listener for compatibility
+      // Note: In production, this should be handled differently
+      final firstGeneratorCollection = FirestoreCollectionUtils.getCollectionName(generatorNames.first);
+      
       return _firestore
-          .collection('logsheets')
+          .collection(firstGeneratorCollection)
           .where('date', isEqualTo: todayStr)
-          .where(
-            'generatorName',
-            whereIn: generatorNames.take(10).toList(),
-          ) // Firestore limit
           .snapshots()
           .listen(
             (snapshot) {
@@ -295,9 +329,11 @@ class FirestoreRealtimeService {
       // Cancel existing listener
       _activeListeners[listenerId]?.cancel();
 
+      // Get collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+
       _activeListeners[listenerId] = _firestore
-          .collection('logsheets')
-          .where('generatorName', isEqualTo: generatorName)
+          .collection(collectionName)
           .where('date', isGreaterThanOrEqualTo: cutoffDateStr)
           .snapshots()
           .listen(
@@ -398,10 +434,12 @@ class FirestoreRealtimeService {
       final todayStr =
           '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
+      // Get collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+
       // Get all data for today for this generator, ordered by timestamp
       final query = await _firestore
-          .collection('logsheets')
-          .where('generatorName', isEqualTo: generatorName)
+          .collection(collectionName)
           .where('date', isEqualTo: todayStr)
           .orderBy('syncedAt', descending: false)
           .get();

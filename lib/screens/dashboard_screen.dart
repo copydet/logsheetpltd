@@ -197,34 +197,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   } // Load fileId yang tersimpan dari storage dan data terakhir
 
   void _loadStoredFileIds() async {
+    print('🔄 DASHBOARD: Loading stored file IDs with consistency check...');
+    
+    // Load dan pastikan GeneratorDataManager ter-update
+    await GeneratorDataManager.loadGeneratorData();
+    
+    print('🔧 DASHBOARD DEBUG: Processing ${generators.length} generators...');
     for (int i = 0; i < generators.length; i++) {
       final generatorName = generators[i].name;
+      print('📱 DASHBOARD: Processing generator $i: $generatorName');
+      print('📱 DASHBOARD: Checking SQLite for $generatorName...');
 
       // PRIORITAS 1: SQLite database (offline-first)
       final dbData = await _getLatestDataFromSQLite(generatorName);
 
       if (dbData != null && dbData.isNotEmpty) {
-        // 🔧 CRITICAL FIX: Validasi fileId untuk Mitsubishi #1
-        String validatedFileId = dbData['fileId'] ?? '';
+        // Dapatkan file ID yang konsisten dari storage
+        final consistentFileId = await StorageService.getActiveFileId(generatorName);
+        String validatedFileId = consistentFileId ?? '';
 
-        if (generatorName == 'Mitsubishi #1') {
-          final problematicFileIds = [
-            '1m-7mAUx8bFKBb9IeGcFUaH96nBJWT0Rw9Pv7VnP-iAM',
-            '1-_G5vZD6xyXpxu1skcdQMB1auGBEW8upurPMuCm9YwA',
-            '19Rq7EtX1IGdkXcie8c7O4WSDYd2SpM0rbeTehKkD-Zo',
-          ];
-
-          if (problematicFileIds.contains(validatedFileId)) {
-            // Gunakan fileId terbaru yang benar dari storage
-            final currentFileId = await StorageService.getActiveFileId(
-              generatorName,
-            );
-            validatedFileId = currentFileId ?? '';
-            print(
-              '🔧 DASHBOARD: Fixed fileId for $generatorName: $validatedFileId (was: ${dbData['fileId']})',
-            );
-          }
-        }
+        print('✅ DASHBOARD: Using consistent fileId for $generatorName: ${validatedFileId.isEmpty ? "EMPTY" : validatedFileId.substring(0, 15)}...');
 
         // Load saved generator status FIRST to preserve user settings
         // Priority: SQLite database first, then SharedPreferences as fallback
@@ -279,22 +271,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           '✅ DASHBOARD: Using SQLite data for ${generatorName} with fileId: $validatedFileId, userActive: $userSetActive',
         );
       } else {
-        // ⚡ SPECIAL CASE: Reset problematic fileId untuk Mitsubishi #1
-        if (generatorName == 'Mitsubishi #1') {
-          final storedFileId = await StorageService.getActiveFileId(
-            generatorName,
-          );
-          if (storedFileId != null &&
-              (storedFileId == '1m-7mAUx8bFKBb9IeGcFUaH96nBJWT0Rw9Pv7VnP-iAM' ||
-                  storedFileId ==
-                      '1-_G5vZD6xyXpxu1skcdQMB1auGBEW8upurPMuCm9YwA' ||
-                  storedFileId ==
-                      '19Rq7EtX1IGdkXcie8c7O4WSDYd2SpM0rbeTehKkD-Zo')) {
-            await StorageService.saveActiveFileId(generatorName, '');
-            print('🔧 DASHBOARD: Reset problematic fileId for $generatorName');
-          }
-        }
-
         // PRIORITAS 2: Firestore fallback (multi-user data)
         final firestoreData = _useFirestoreData
             ? _firestoreData[generatorName]
@@ -640,20 +616,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     GeneratorData(
       id: 1,
       name: 'Mitsubishi #1',
-      isActive: false, // Default false - akan diload dari storage
-      temperature: 85,
-      pressure: 4.2,
-      operationHours: 18,
-      fileId: '', // Kosong untuk testing - perlu dibuat logsheet dulu
+      isActive: false,
+      temperature: 0,
+      pressure: 0,
+      operationHours: 0,
+      fileId: '',
     ),
     GeneratorData(
       id: 2,
       name: 'Mitsubishi #2',
-      isActive: false, // Default false - akan diload dari storage
-      temperature: 70,
-      pressure: 3.8,
-      operationHours: 12,
-      fileId: '', // Empty karena belum ada logsheet
+      isActive: false,
+      temperature: 0,
+      pressure: 0,
+      operationHours: 0,
+      fileId: '',
     ),
     GeneratorData(
       id: 3,

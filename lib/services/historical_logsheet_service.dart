@@ -4,7 +4,7 @@ import 'google_drive_service.dart';
 import 'rest_api_service.dart';
 import 'spreadsheet_service.dart';
 import 'database_service.dart';
-import 'firestore_historical_service.dart';
+import 'firestore_historical_service.dart' as fhs;
 
 class HistoricalLogsheetService {
   static const String _historyPrefix = 'logsheet_history_';
@@ -124,7 +124,7 @@ class HistoricalLogsheetService {
 
       // PRIORITAS 1: Ambil data dari Firestore (real-time, multi-user)
       print('Step 1: Fetching data from Firestore (real-time, multi-user)...');
-      final firestoreData = await FirestoreHistoricalService.getDailySummary(
+      final firestoreData = await fhs.FirestoreHistoricalService.getDailySummary(
         generatorName,
         daysBack: daysBack,
       );
@@ -655,32 +655,64 @@ class HistoricalLogsheetService {
           fileId = data['fileId'].toString();
         }
       }
+      
+      // Prioritas tinggi: Cek apakah ada fileId yang BUKAN dari Firestore
+      // untuk memastikan download bisa bekerja dengan Google Drive fileId asli
+      final currentFileId = data['fileId']?.toString() ?? '';
+      if (currentFileId.isNotEmpty && !currentFileId.startsWith('firestore_')) {
+        // Ini adalah Google Drive fileId asli, prioritaskan untuk download
+        if (fileId == null || fileId.startsWith('firestore_')) {
+          fileId = currentFileId;
+          hasRealData = true; // Mark sebagai real data karena ada Google Drive fileId
+        }
+      }
 
-      // Total KwH - dari field totalKwh atau kwhTotal
+      // Total KwH - akumulasi nilai terbesar dalam hari (nilai kumulatif terakhir)
       String? kwhStr =
           data['totalKwh']?.toString() ?? data['kwhTotal']?.toString() ?? '0';
       final totalKwhValue = double.tryParse(kwhStr.replaceAll(',', '.'));
       if (totalKwhValue != null && totalKwhValue > 0) {
-        totalKwh = totalKwhValue; // Ambil nilai terakhir (paling update)
-        print('✅ Found totalKwh: $totalKwhValue');
+        // Filter data yang tidak realistis (>500 kWh per hari untuk 1 generator)
+        if (totalKwhValue <= 500.0) {
+          // Ambil nilai terbesar karena totalKwh adalah kumulatif harian
+          if (totalKwhValue > totalKwh) {
+            totalKwh = totalKwhValue;
+          }
+          print('✅ Found valid totalKwh: $totalKwhValue (current max: $totalKwh)');
+        } else {
+          print('⚠️ Skipping unrealistic totalKwh: $totalKwhValue (too high, likely test data)');
+        }
       }
 
-      // Total BBM - dari field totalBbm atau bbmTotal
+      // Total BBM - akumulasi nilai terbesar dalam hari (nilai kumulatif terakhir)  
       String? bbmStr =
           data['totalBbm']?.toString() ?? data['bbmTotal']?.toString() ?? '0';
       final totalBbmValue = double.tryParse(bbmStr.replaceAll(',', '.'));
       if (totalBbmValue != null && totalBbmValue > 0) {
-        totalBbm = totalBbmValue; // Ambil nilai terakhir (paling update)
-        print('✅ Found totalBbm: $totalBbmValue');
+        // Filter data yang tidak realistis (>1000L per hari untuk 1 generator)
+        if (totalBbmValue <= 1000.0) {
+          // Ambil nilai terbesar karena totalBbm adalah kumulatif harian
+          if (totalBbmValue > totalBbm) {
+            totalBbm = totalBbmValue;
+          }
+          print('✅ Found valid totalBbm: $totalBbmValue (current max: $totalBbm)');
+        } else {
+          print('⚠️ Skipping unrealistic totalBbm: $totalBbmValue (too high, likely test data)');
+        }
       }
 
-      // SFC - dari field sfc
+      // SFC - dari field sfc dengan validasi realistis
       String? sfcStr = data['sfc']?.toString() ?? '0';
       final sfcValue = double.tryParse(sfcStr.replaceAll(',', '.'));
       if (sfcValue != null && sfcValue > 0) {
-        totalSfc += sfcValue;
-        validSfcCount++;
-        print('✅ Found SFC: $sfcValue');
+        // Filter SFC yang tidak realistis (>10000 g/kWh)
+        if (sfcValue <= 10000.0) {
+          totalSfc += sfcValue;
+          validSfcCount++;
+          print('✅ Found valid SFC: $sfcValue');
+        } else {
+          print('⚠️ Skipping unrealistic SFC: $sfcValue (too high, likely test data)');
+        }
       }
     }
 

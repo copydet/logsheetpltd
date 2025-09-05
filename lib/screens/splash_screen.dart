@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../services/database_service.dart';
-import '../services/storage_service.dart';
 import '../models/firebase_user_model.dart';
 import 'login_screen.dart';
 import 'main_navigation_screen.dart';
@@ -26,13 +24,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // Add delay untuk splash effect
       await Future.delayed(const Duration(seconds: 2));
-
-      // CRITICAL FIX: Cleanup data Mitsubishi #1 yang bermasalah
-      print('🧹 SPLASH: Cleaning up problematic Mitsubishi #1 data...');
-      await Future.wait([
-        DatabaseService.cleanupProblematicMitsubishi1Data(),
-        StorageService.resetProblematicMitsubishi1FileId(),
-      ]);
 
       // Check login status
       final FirebaseUserModel? user = await AuthService.getCurrentUser();

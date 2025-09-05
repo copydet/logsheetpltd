@@ -981,35 +981,4 @@ class DatabaseService {
       print('❌ DATABASE: Error saving logsheet from Firestore: $e');
     }
   }
-
-  /// CRITICAL FIX: Membersihkan data Mitsubishi #1 yang menggunakan fileId bermasalah
-  static Future<void> cleanupProblematicMitsubishi1Data() async {
-    try {
-      final db = await DatabaseService().database;
-
-      // Daftar fileId bermasalah yang menyebabkan data masuk ke tanggal salah
-      final problematicFileIds = [
-        '1m-7mAUx8bFKBb9IeGcFUaH96nBJWT0Rw9Pv7VnP-iAM',
-        '1-_G5vZD6xyXpxu1skcdQMB1auGBEW8upurPMuCm9YwA',
-        '19Rq7EtX1IGdkXcie8c7O4WSDYd2SpM0rbeTehKkD-Zo',
-      ];
-
-      for (String fileId in problematicFileIds) {
-        // Hapus dari tabel logsheets
-        final deletedLogsheets = await db.delete(
-          'logsheets',
-          where: 'file_id = ? AND generator_name = ?',
-          whereArgs: [fileId, 'Mitsubishi #1'],
-        );
-
-        print(
-          '🧹 DATABASE: Cleaned up $deletedLogsheets logsheet records for fileId: $fileId',
-        );
-      }
-
-      print('✅ DATABASE: Mitsubishi #1 problematic data cleanup completed');
-    } catch (e) {
-      print('❌ DATABASE: Error during Mitsubishi #1 cleanup: $e');
-    }
-  }
 }

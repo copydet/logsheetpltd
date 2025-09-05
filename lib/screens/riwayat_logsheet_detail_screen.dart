@@ -421,6 +421,7 @@ class _RiwayatLogsheetDetailScreenState
   Future<void> _downloadSpreadsheet(Map<String, dynamic> summary) async {
     final String? fileId = summary['fileId'] as String?;
     final String dateFormatted = summary['dateFormatted'] as String;
+    final String date = summary['date'] as String? ?? '';
 
     if (fileId == null || fileId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -432,6 +433,42 @@ class _RiwayatLogsheetDetailScreenState
       return;
     }
 
+    // Cek apakah ini adalah fileId dari Firestore (format: firestore_...)
+    if (fileId.startsWith('firestore_')) {
+      print('🔍 DOWNLOAD: Detected Firestore fileId, searching for real Google Drive file...');
+      
+      try {
+        // Cari file Google Drive yang sebenarnya untuk tanggal ini
+        final realFileId = await _findRealGoogleDriveFileId(date);
+        
+        if (realFileId != null && realFileId.isNotEmpty) {
+          print('✅ DOWNLOAD: Found real fileId: $realFileId');
+          await SpreadsheetDownloadService.downloadWithFormatChoice(
+            context,
+            realFileId,
+            widget.generatorName,
+            dateFormatted,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('File Google Drive tidak ditemukan untuk tanggal ini'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error mencari file: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Jika fileId normal (Google Drive), lanjutkan download biasa
     try {
       await SpreadsheetDownloadService.downloadWithFormatChoice(
         context,
@@ -449,6 +486,75 @@ class _RiwayatLogsheetDetailScreenState
         );
       }
     }
+  }
+
+  /// Mencari fileId Google Drive yang sebenarnya berdasarkan tanggal
+  Future<String?> _findRealGoogleDriveFileId(String date) async {
+    try {
+      // Parse date untuk mendapatkan format yang benar
+      final dateTime = DateTime.parse(date);
+      final formattedDate = '${dateTime.day.toString().padLeft(2, '0')} ${_getMonthName(dateTime.month)} ${dateTime.year}';
+      final expectedFileName = 'Logsheet ${widget.generatorName}, $formattedDate';
+      
+      print('🔍 DOWNLOAD: Looking for file: $expectedFileName');
+      
+      // Gunakan REST API service untuk mencari file
+      final response = await _searchFileByName(expectedFileName, widget.generatorName, date);
+      
+      if (response != null && response.isNotEmpty) {
+        print('✅ DOWNLOAD: Found Google Drive file: $response');
+        return response;
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ DOWNLOAD: Error searching for file: $e');
+      return null;
+    }
+  }
+
+  /// Helper untuk mencari file berdasarkan nama menggunakan API
+  Future<String?> _searchFileByName(String fileName, String generatorName, String date) async {
+    try {
+      final url = 'https://us-central1-powerplantlogsheet-8780a.cloudfunctions.net/api/find-file?fileName=${Uri.encodeComponent(fileName)}&generatorName=${Uri.encodeComponent(generatorName)}&date=${Uri.encodeComponent(date)}T00:00:00';
+      
+      // Import http dan buat request sederhana
+      print('🔍 DOWNLOAD: Searching via API: $url');
+      
+      // Simulasikan pencarian - untuk sementara return null jika tidak ditemukan
+      // Nanti bisa diimplementasi dengan http package yang sudah ada di project
+      
+      // Coba cari di summary yang mungkin punya fileId asli
+      for (final summary in dailySummaries) {
+        final summaryDate = summary['date'] as String? ?? '';
+        if (summaryDate == date) {
+          final rawData = summary['rawData'] as List<dynamic>? ?? [];
+          for (final entry in rawData) {
+            if (entry is Map<String, dynamic>) {
+              final entryFileId = entry['fileId'] as String? ?? '';
+              // Jika ada fileId yang bukan format Firestore, gunakan itu
+              if (entryFileId.isNotEmpty && !entryFileId.startsWith('firestore_')) {
+                return entryFileId;
+              }
+            }
+          }
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ DOWNLOAD: Error in search API: $e');
+      return null;
+    }
+  }
+
+  /// Helper untuk mendapatkan nama bulan
+  String _getMonthName(int month) {
+    const months = [
+      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return months[month];
   }
 
   // Helper methods untuk mengambil data yang sudah dihitung

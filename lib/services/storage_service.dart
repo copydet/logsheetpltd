@@ -24,21 +24,70 @@ class StorageService {
     return prefs.getBool(key);
   }
 
-  // Simpan fileId aktif per generator
+  // Simpan fileId aktif per generator dengan tanggal
   static Future<void> saveActiveFileId(
     String generatorName,
     String fileId,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = '${_activeFileIdKey}_$generatorName';
+    final today = DateTime.now();
+    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    
+    // Simpan dengan key per tanggal untuk konsistensi
+    final key = '${_activeFileIdKey}_${generatorName}_$dateKey';
     await prefs.setString(key, fileId);
+    
+    // Juga simpan tanpa tanggal untuk backward compatibility
+    final legacyKey = '${_activeFileIdKey}_$generatorName';
+    await prefs.setString(legacyKey, fileId);
+    
+    print('🗄️ STORAGE: Saved fileId for $generatorName ($dateKey): $fileId');
   }
 
-  // Ambil fileId aktif per generator
+  // Ambil fileId aktif per generator untuk hari ini
   static Future<String?> getActiveFileId(String generatorName) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = '${_activeFileIdKey}_$generatorName';
-    return prefs.getString(key);
+    final today = DateTime.now();
+    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    
+    // Coba ambil file ID untuk hari ini dulu
+    final todayKey = '${_activeFileIdKey}_${generatorName}_$dateKey';
+    final todayFileId = prefs.getString(todayKey);
+    
+    if (todayFileId != null && todayFileId.isNotEmpty) {
+      print('🗄️ STORAGE: Found today fileId for $generatorName ($dateKey): $todayFileId');
+      return todayFileId;
+    }
+    
+    // Fallback ke legacy key jika tidak ada file ID hari ini
+    final legacyKey = '${_activeFileIdKey}_$generatorName';
+    final legacyFileId = prefs.getString(legacyKey);
+    
+    if (legacyFileId != null && legacyFileId.isNotEmpty) {
+      print('🗄️ STORAGE: Using legacy fileId for $generatorName: $legacyFileId');
+      return legacyFileId;
+    }
+    
+    print('🗄️ STORAGE: No fileId found for $generatorName on $dateKey');
+    return null;
+  }
+
+  // Bersihkan file ID lama (file ID kemarin/hari sebelumnya)
+  static Future<void> cleanupOldFileIds(String generatorName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    
+    // Hapus file ID dari 7 hari yang lalu
+    for (int i = 1; i <= 7; i++) {
+      final oldDate = today.subtract(Duration(days: i));
+      final oldDateKey = '${oldDate.year}-${oldDate.month.toString().padLeft(2, '0')}-${oldDate.day.toString().padLeft(2, '0')}';
+      final oldKey = '${_activeFileIdKey}_${generatorName}_$oldDateKey';
+      
+      if (prefs.containsKey(oldKey)) {
+        await prefs.remove(oldKey);
+        print('🗄️ CLEANUP: Removed old fileId for $generatorName ($oldDateKey)');
+      }
+    }
   }
 
   // 🏪 CACHE: Simpan status hasData untuk jam tertentu dengan tanggal PER GENERATOR
@@ -76,8 +125,6 @@ class StorageService {
 
     // Daftar generator yang dikenal
     final generators = [
-      'Mitsubishi #1',
-      'Mitsubishi #2',
       'Mitsubishi #3',
       'Mitsubishi #4',
     ];
@@ -201,38 +248,4 @@ class StorageService {
     return fileId != null;
   }
 
-  /// CRITICAL FIX: Reset fileId bermasalah untuk Mitsubishi #1
-  static Future<void> resetProblematicMitsubishi1FileId() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final currentFileId = await getActiveFileId('Mitsubishi #1');
-
-      // Daftar fileId bermasalah
-      final problematicFileIds = [
-        '1m-7mAUx8bFKBb9IeGcFUaH96nBJWT0Rw9Pv7VnP-iAM',
-        '1-_G5vZD6xyXpxu1skcdQMB1auGBEW8upurPMuCm9YwA',
-        '19Rq7EtX1IGdkXcie8c7O4WSDYd2SpM0rbeTehKkD-Zo',
-      ];
-
-      if (currentFileId != null && problematicFileIds.contains(currentFileId)) {
-        // Reset fileId bermasalah
-        final key = '${_activeFileIdKey}_Mitsubishi #1';
-        await prefs.remove(key);
-        print(
-          '🧹 STORAGE: Reset problematic fileId for Mitsubishi #1: $currentFileId',
-        );
-
-        // Hapus juga cache terkait
-        final allKeys = prefs.getKeys();
-        for (String key in allKeys) {
-          if (key.contains('Mitsubishi #1') && key.contains('hasData')) {
-            await prefs.remove(key);
-          }
-        }
-        print('✅ STORAGE: Cleared all cache for Mitsubishi #1');
-      }
-    } catch (e) {
-      print('❌ STORAGE: Error resetting Mitsubishi #1 fileId: $e');
-    }
-  }
 }

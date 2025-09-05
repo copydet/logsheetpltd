@@ -307,27 +307,37 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   // SIMPLIFIED: Inisialisasi form - cek apakah ada data untuk jam saat ini
   void _initializeFormMode() async {
     final currentHour = DateTime.now().hour;
-    print('Initializing form for hour: $currentHour');
+    final today = DateTime.now();
+    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    
+    print('🔄 FORM_INIT: Initializing form for ${widget.generatorName} hour: $currentHour on $dateKey');
 
-    // Ambil fileId dari storage terlebih dahulu
+    // Pastikan file ID konsisten untuk hari ini
+    await GeneratorDataManager.ensureConsistentFileId(widget.generatorName);
+
+    // Ambil fileId dari storage (sudah ter-filter untuk hari ini)
     final storedFileId = await StorageService.getActiveFileId(
       widget.generatorName,
     );
-    if (storedFileId != null) {
+    
+    if (storedFileId != null && storedFileId.isNotEmpty) {
       setState(() {
         _activeFileId = storedFileId;
       });
-      print('Using stored fileId: $storedFileId');
-    } else if (widget.activeFileId != null) {
+      print('✅ FORM_INIT: Using consistent fileId for ${widget.generatorName}: ${storedFileId.substring(0, 15)}...');
+    } else if (widget.activeFileId != null && widget.activeFileId!.isNotEmpty) {
       setState(() {
         _activeFileId = widget.activeFileId;
       });
-      // Simpan ke storage
+      // Simpan ke storage dengan tanggal
       await StorageService.saveActiveFileId(
         widget.generatorName,
         widget.activeFileId!,
       );
-      print('Using passed fileId: ${widget.activeFileId}');
+      await GeneratorDataManager.updateGeneratorFileId(widget.generatorName, widget.activeFileId!);
+      print('✅ FORM_INIT: Saved passed fileId for ${widget.generatorName}: ${widget.activeFileId!.substring(0, 15)}...');
+    } else {
+      print('⚠️ FORM_INIT: No fileId available for ${widget.generatorName} on $dateKey');
     }
 
     // Load data existing dari storage atau spreadsheet
@@ -1264,16 +1274,22 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
                                     widget.generatorName,
                                   );
 
-                              // Simpan fileId aktif
+                              // Simpan fileId aktif ke state
                               setState(() {
                                 _activeFileId = result['fileId'];
                               });
 
-                              // Simpan ke storage untuk persistence
+                              // Simpan ke storage dan update GeneratorDataManager
                               await StorageService.saveActiveFileId(
                                 widget.generatorName,
                                 result['fileId'],
                               );
+                              await GeneratorDataManager.updateGeneratorFileId(
+                                widget.generatorName, 
+                                result['fileId'],
+                              );
+
+                              print('✅ NEW_SPREADSHEET: Created and saved fileId for ${widget.generatorName}: ${result['fileId'].substring(0, 15)}...');
 
                               // Hapus snackbar loading
                               scaffoldMessenger.hideCurrentSnackBar();

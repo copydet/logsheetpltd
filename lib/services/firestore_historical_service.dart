@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/firestore_collection_utils.dart';
 
 /// Service untuk mengambil data historis dari Firestore
 class FirestoreHistoricalService {
@@ -14,13 +15,16 @@ class FirestoreHistoricalService {
         '📊 FIRESTORE: Getting daily summary for $generatorName ($daysBack days)',
       );
 
+      // Get collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+      print('📊 FIRESTORE: Using collection: $collectionName');
+
       final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
       final cutoffDateStr =
           '${cutoffDate.year.toString().padLeft(4, '0')}-${cutoffDate.month.toString().padLeft(2, '0')}-${cutoffDate.day.toString().padLeft(2, '0')}';
 
       final query = await _firestore
-          .collection('logsheets')
-          .where('generatorName', isEqualTo: generatorName)
+          .collection(collectionName)
           .where('date', isGreaterThanOrEqualTo: cutoffDateStr)
           .orderBy('date', descending: true)
           .get();
@@ -39,7 +43,7 @@ class FirestoreHistoricalService {
         }
 
         // Convert Firestore data to expected format
-        final logsheetData = data['data'] as Map<String, dynamic>;
+        final logsheetData = data['data'] as Map<String, dynamic>? ?? {};
 
         // Create formatted entry similar to original format
         final entry = {
@@ -184,9 +188,12 @@ class FirestoreHistoricalService {
     try {
       print('📊 FIRESTORE: Getting data for $generatorName on $date');
 
+      // Get collection name for this generator
+      final collectionName = FirestoreCollectionUtils.getCollectionName(generatorName);
+      print('📊 FIRESTORE: Using collection: $collectionName for download');
+
       final query = await _firestore
-          .collection('logsheets')
-          .where('generatorName', isEqualTo: generatorName)
+          .collection(collectionName)
           .where('date', isEqualTo: date)
           .get();
 
@@ -199,7 +206,7 @@ class FirestoreHistoricalService {
       List<Map<String, dynamic>> entries = [];
       for (final doc in query.docs) {
         final data = doc.data();
-        final logsheetData = data['data'] as Map<String, dynamic>;
+        final logsheetData = data['data'] as Map<String, dynamic>? ?? {};
 
         entries.add({
           'fileId': 'firestore_${generatorName.replaceAll(' ', '_')}_$date',
@@ -212,6 +219,8 @@ class FirestoreHistoricalService {
           ...logsheetData,
         });
       }
+
+      print('✅ FIRESTORE: Found ${entries.length} entries for download');
 
       return {
         'fileId': 'firestore_${generatorName.replaceAll(' ', '_')}_$date',
