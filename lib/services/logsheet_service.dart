@@ -5,15 +5,27 @@ import 'database_temperature_service.dart';
 import 'database_service.dart';
 import 'rest_api_service.dart';
 import 'file_id_sync_service.dart';
+import '../constants/google_drive_config.dart';
 
 class LogsheetService {
   static const String _baseUrl =
       'https://us-central1-powerplantlogsheet-8780a.cloudfunctions.net/api';
 
-  /// Buats a new logsheet based on the template
+  /// Creates a new logsheet based on the template
+  ///
+  /// BUSINESS LOGIC: Every day, users create a NEW spreadsheet for that day.
+  /// Each spreadsheet has a unique fileId that gets synced across devices.
+  ///
+  /// @param generatorName - Name of the generator (e.g., 'Mitsubishi #1')
+  /// @param templateFileId - Optional: Custom template to copy from
+  /// @param targetFolderId - Optional: Custom folder to create the logsheet in
+  ///
+  /// Returns: Map with fileId, fileName, and webViewLink of the created logsheet
   static Future<Map<String, dynamic>> createLogsheet(
-    String generatorName,
-  ) async {
+    String generatorName, {
+    String? templateFileId,
+    String? targetFolderId,
+  }) async {
     try {
       final timestamp = DateTime.now();
 
@@ -39,6 +51,12 @@ class LogsheetService {
 
       final String newFileName = 'Logsheet $generatorName, $formattedDate';
 
+      // Use provided IDs or fallback to config-based defaults
+      final String effectiveTemplateFileId =
+          templateFileId ?? GoogleDriveConfig.getTemplateFileId(generatorName);
+      final String effectiveTargetFolderId =
+          targetFolderId ?? GoogleDriveConfig.getTargetFolderId();
+
       final response = await http.post(
         Uri.parse('$_baseUrl/create-logsheet'),
         headers: {
@@ -46,8 +64,8 @@ class LogsheetService {
           'Accept': 'application/json',
         },
         body: jsonEncode({
-          'templateFileId': _templateFileId,
-          'targetFolderId': _targetFolderId,
+          'templateFileId': effectiveTemplateFileId,
+          'targetFolderId': effectiveTargetFolderId,
           'newFileName': newFileName,
         }),
       );
