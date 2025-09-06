@@ -5,6 +5,7 @@ import 'rest_api_service.dart';
 import 'spreadsheet_service.dart';
 import 'database_service.dart';
 import 'firestore_historical_service.dart' as fhs;
+import 'storage_service.dart';
 
 class HistoricalLogsheetService {
   static const String _historyPrefix = 'logsheet_history_';
@@ -64,8 +65,8 @@ class HistoricalLogsheetService {
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final today = DateTime.now();
-      final dateKey = _formatDateKey(today);
+      // Gunakan tanggal logsheet, bukan tanggal kalender
+      final dateKey = StorageService.formatLogsheetDateKey();
 
       // Cek data lokal untuk hari ini
       final historyKey = '$_historyPrefix${generatorName}_$dateKey';
@@ -85,9 +86,10 @@ class HistoricalLogsheetService {
       }
 
       // Cek juga di Google Drive
+      final logsheetDate = StorageService.getLogsheetDate();
       final driveFileId = await GoogleDriveService.findFileByDate(
         generatorName,
-        today,
+        logsheetDate,
       );
       print(
         '   Google Drive file: ${driveFileId != null ? driveFileId : "Not found"}',

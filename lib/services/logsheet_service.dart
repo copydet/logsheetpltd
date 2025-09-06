@@ -3,14 +3,12 @@ import 'package:http/http.dart' as http;
 import 'temperature_storage_service.dart';
 import 'database_temperature_service.dart';
 import 'database_service.dart';
+import 'rest_api_service.dart';
+import 'file_id_sync_service.dart';
 
 class LogsheetService {
   static const String _baseUrl =
       'https://us-central1-powerplantlogsheet-8780a.cloudfunctions.net/api';
-
-  static const String _templateFileId =
-      '17bXUXVnETMzqzQ7JtlVPpm8p6Y2vMf8MpbyKxE2gyy8';
-  static const String _targetFolderId = '1mOJd9txDjF04bmYroK-9jXpyAJc8rh9a';
 
   /// Buats a new logsheet based on the template
   static Future<Map<String, dynamic>> createLogsheet(
@@ -58,11 +56,38 @@ class LogsheetService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print(
-          'Successfully created logsheet with fileId: ${responseData['fileId']}',
-        );
+        final fileId = responseData['fileId'];
+
+        print('Successfully created logsheet with fileId: $fileId');
+
+        // 🔥 SYNC FILE ID TO FIRESTORE untuk konsistensi cross-device
+        try {
+          await FileIdSyncService.saveFileIdToFirestore(
+            generatorName: generatorName,
+            fileId: fileId,
+            createdBy: 'create_logsheet', // atau bisa pakai user email
+          );
+          print(
+            '✅ FILE_SYNC: FileId saved to Firestore for cross-device consistency',
+          );
+        } catch (e) {
+          print('⚠️ FILE_SYNC: Failed to save fileId to Firestore: $e');
+          // Don't fail the operation if Firestore save fails
+        }
+
+        // Auto-share with team members to prevent permission issues
+        try {
+          await autoShareWithTeam(fileId);
+          print('✅ PERMISSIONS: Auto-shared logsheet with team members');
+        } catch (e) {
+          print(
+            '⚠️ PERMISSIONS: Auto-share failed, but logsheet creation succeeded: $e',
+          );
+          // Don't fail the entire operation if sharing fails
+        }
+
         return {
-          'fileId': responseData['fileId'],
+          'fileId': fileId,
           'fileName': responseData['fileName'],
           'webViewLink': responseData['webViewLink'],
         };
@@ -83,6 +108,246 @@ class LogsheetService {
       }
       throw ApiException('Terjadi kesalahan: ${e.toString()}');
     }
+  }
+
+  /// Auto-share logsheet with known team members to prevent permission issues
+  static Future<void> autoShareWithTeam(String fileId) async {
+    final List<String> teamEmails = [
+      'sony@pltd.com',
+      'dimas@pltd.com',
+      'admin@pltd.com',
+      // Add more team member emails as needed
+    ];
+
+    print(
+      '� AUTO_SHARE: Starting auto-share for fileId: $fileId with ${teamEmails.length} team members',
+    );
+
+    // First check if we can access the spreadsheet permissions
+    try {
+      await RestApiService.getSpreadsheetPermissions(fileId);
+      print('📋 AUTO-SHARE: Current permissions retrieved successfully');
+    } catch (e) {
+      print('⚠️ AUTO-SHARE: Cannot retrieve current permissions: $e');
+    }
+
+    int successCount = 0;
+    int failureCount = 0;
+
+    for (final email in teamEmails) {
+      try {
+        await RestApiService.shareSpreadsheet(
+          fileId,
+          emailAddress: email,
+          role: 'writer',
+          sendNotificationEmail: false, // Don't spam with notifications
+        );
+        successCount++;
+        print('✅ PERMISSIONS: Successfully shared spreadsheet with $email');
+
+        // Small delay between sharing requests to avoid rate limiting
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        failureCount++;
+        print('⚠️ PERMISSIONS: Failed to share with $email: $e');
+        // Continue with other emails even if one fails
+      }
+    }
+
+    print(
+      '📊 AUTO-SHARE: Completed - Success: $successCount, Failed: $failureCount',
+    );
+
+    if (successCount == 0) {
+      throw Exception(
+        'Failed to share with any team members. All ${teamEmails.length} attempts failed.',
+      );
+    } else if (failureCount > 0) {
+      print(
+        '⚠️ AUTO-SHARE: Partial success - ${successCount}/${teamEmails.length} shares succeeded',
+      );
+    } else {
+      print('✅ AUTO-SHARE: All sharing attempts successful');
+    }
+  }
+
+  /// Smart save with automatic permission handling
+  static Future<void> saveLogsheetDataSmart(
+    String fileId,
+    Map<String, dynamic> logsheetData,
+  ) async {
+    try {
+      // First attempt: normal save
+      await saveLogsheetData(fileId, logsheetData);
+      print('✅ SMART SAVE: Data berhasil disimpan ke Google Sheets');
+    } catch (e) {
+      String errorMessage = e.toString().toLowerCase();
+
+      // Enhanced error detection for permission issues (case-insensitive)
+      bool isPermissionError =
+          errorMessage.contains('unable to update spreadsheet') ||
+          errorMessage.contains('permission denied') ||
+          errorMessage.contains('500') ||
+          errorMessage.contains('403') ||
+          errorMessage.contains('not authorized') ||
+          errorMessage.contains('access denied') ||
+          errorMessage.contains('insufficient permission');
+
+      if (isPermissionError) {
+        print(
+          '🔍 PERMISSION_CHECK: Permission error detected in error message: $errorMessage',
+        );
+        print(
+          '⚠️ SMART SAVE: Permission issue detected (${e.toString()}), attempting auto-share...',
+        );
+
+        try {
+          // Try to auto-share with team members first
+          await autoShareWithTeam(fileId);
+          print(
+            '✅ SMART SAVE: Auto-share completed, waiting for permissions to propagate...',
+          );
+
+          // Wait longer for Google permissions to propagate
+          await Future.delayed(const Duration(seconds: 5));
+
+          // Try multiple retries with increasing delays
+          for (int retry = 0; retry < 3; retry++) {
+            try {
+              print(
+                '🔄 RETRY_ATTEMPT: Attempting save after auto-share (attempt ${retry + 1}/3)',
+              );
+              await saveLogsheetData(fileId, logsheetData);
+              print(
+                '✅ SMART SAVE: Data berhasil disimpan setelah auto-share (attempt ${retry + 1})',
+              );
+              return; // Success, exit the method
+            } catch (retryError) {
+              print('⚠️ SMART SAVE: Retry ${retry + 1} failed: $retryError');
+              if (retry < 2) {
+                // Wait progressively longer for each retry
+                print(
+                  '⏰ RETRY_DELAY: Waiting ${(retry + 1) * 3} seconds before next attempt...',
+                );
+                await Future.delayed(Duration(seconds: (retry + 1) * 3));
+              }
+            }
+          }
+
+          // All retries failed
+          print('❌ SMART SAVE: All retries failed after auto-share');
+          throw Exception(
+            'Failed to save after auto-sharing and multiple retries: ${e.toString()}',
+          );
+        } catch (shareError) {
+          print('❌ SMART SAVE: Auto-share failed: $shareError');
+          // Re-throw the original error with additional context
+          throw Exception(
+            'Permission issue detected and auto-share failed. Original error: ${e.toString()}',
+          );
+        }
+      } else {
+        // Non-permission error, just rethrow
+        print('❌ SMART SAVE: Non-permission error: $e');
+        rethrow;
+      }
+    }
+  }
+
+  /// Enhanced version with graceful degradation - saves to both Sheets and local DB
+  static Future<Map<String, dynamic>> saveLogsheetDataWithFallback(
+    String fileId,
+    Map<String, dynamic> logsheetData,
+  ) async {
+    print(
+      '🎯 ENHANCED_SAVE: saveLogsheetDataWithFallback called with fileId: $fileId',
+    );
+    print('🎯 ENHANCED_SAVE: logsheetData keys: ${logsheetData.keys.toList()}');
+
+    bool googleSheetsSuccess = false;
+    bool localStorageSuccess = false;
+    String? googleSheetsError;
+    bool permissionIssueDetected = false;
+
+    // Pre-check: Try to verify access to the spreadsheet first
+    try {
+      await RestApiService.getSpreadsheetPermissions(fileId);
+      print('✅ PRE-CHECK: Spreadsheet access verified');
+    } catch (e) {
+      print('⚠️ PRE-CHECK: Cannot access spreadsheet permissions: $e');
+      // This might indicate a permission issue - trigger proactive sharing
+      String errorMsg = e.toString().toLowerCase();
+      if (errorMsg.contains('404') ||
+          errorMsg.contains('not found') ||
+          errorMsg.contains('permission')) {
+        permissionIssueDetected = true;
+        print(
+          '🔄 PRE-CHECK: Permission issue detected, attempting proactive auto-share...',
+        );
+
+        try {
+          await autoShareWithTeam(fileId);
+          print('✅ PRE-CHECK: Proactive auto-share completed');
+          // Wait for permissions to propagate
+          await Future.delayed(const Duration(seconds: 3));
+        } catch (shareError) {
+          print('⚠️ PRE-CHECK: Proactive auto-share failed: $shareError');
+        }
+      }
+    }
+
+    try {
+      // Try smart save (includes auto-share for permissions)
+      await saveLogsheetDataSmart(fileId, logsheetData);
+      googleSheetsSuccess = true;
+      print('✅ SHEETS: Data berhasil disimpan ke Google Sheets (smart save)');
+    } catch (e) {
+      googleSheetsError = e.toString();
+      print('❌ SHEETS: Gagal simpan ke Google Sheets: $e');
+
+      // Enhanced error analysis
+      String errorMessage = e.toString().toLowerCase();
+      if (errorMessage.contains('permission') ||
+          errorMessage.contains('500') ||
+          errorMessage.contains('access denied') ||
+          errorMessage.contains('unauthorized')) {
+        permissionIssueDetected = true;
+      }
+    }
+
+    try {
+      // Always save to local storage/database as backup
+      final databaseService = DatabaseService();
+      final now = DateTime.now();
+
+      // Convert the spreadsheet data format to database format
+      final dbData = {
+        ...logsheetData,
+        'fileId': fileId,
+        'savedDate': now.toIso8601String(),
+        'timestamp': now.toIso8601String(),
+      };
+
+      await databaseService.saveLogsheetToHistory(
+        fileId,
+        logsheetData['generatorName'] ?? 'Unknown',
+        dbData,
+      );
+
+      localStorageSuccess = true;
+      print('✅ DATABASE: Data berhasil disimpan ke local database');
+    } catch (e) {
+      print('❌ DATABASE: Gagal simpan ke local database: $e');
+    }
+
+    // Return comprehensive status
+    return {
+      'googleSheetsSuccess': googleSheetsSuccess,
+      'localStorageSuccess': localStorageSuccess,
+      'googleSheetsError': googleSheetsError,
+      'permissionIssueDetected': permissionIssueDetected,
+      'success': localStorageSuccess, // Overall success if at least local works
+    };
   }
 
   /// Menyimpan data ke spreadsheet
@@ -195,9 +460,19 @@ class LogsheetService {
 
       if (response.statusCode != 200) {
         final errorData = jsonDecode(response.body);
-        throw ApiException(
-          errorData['error'] ?? 'Gagal menyimpan data logsheet',
-        );
+        final errorMessage =
+            errorData['error'] ?? 'Gagal menyimpan data logsheet';
+
+        // Check for specific permission errors
+        if (response.statusCode == 500) {
+          throw Exception(
+            'Server error: Unable to update spreadsheet. This might be a permission issue if updating from a different device.',
+          );
+        } else if (response.statusCode == 403) {
+          throw Exception('Permission denied to access logsheet: $fileId');
+        } else {
+          throw ApiException(errorMessage);
+        }
       }
 
       // 🌡️ SAVE TEMPERATURE DATA TO SHARED PREFERENCES

@@ -33,11 +33,17 @@ class SheetsApiService {
         final data = jsonDecode(response.body);
         print('✅ Retrieved hourly data for hour $hour');
         return data;
+      } else if (response.statusCode == 404) {
+        throw Exception('No data found for hour $hour');
       } else {
         throw Exception('Failed to get hourly data: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌  getting hourly data: $e');
+      if (e.toString().contains('No data found')) {
+        print('! SHEETS: $e');
+      } else {
+        print('❌ SHEETS: Error getting hourly data: $e');
+      }
       rethrow;
     }
   }

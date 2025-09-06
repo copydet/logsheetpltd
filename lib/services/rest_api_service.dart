@@ -246,12 +246,23 @@ class RestApiService {
             data['data']['updatedCells'] != null) {
           print('✅ Updated ${data['data']['updatedCells']} cells');
         } else {
-          print('✅ Update ful (cells count not available)');
+          print('✅ Update successful (cells count not available)');
         }
         return data;
       } else if (response.statusCode == 400) {
         final error = jsonDecode(response.body);
         throw Exception('Invalid updates format: ${error['message']}');
+      } else if (response.statusCode == 403) {
+        throw Exception(
+          'Permission denied: No write access to spreadsheet $fileId',
+        );
+      } else if (response.statusCode == 500) {
+        // Error 500 biasanya terjadi karena permission issue dari device lain
+        final responseBody = response.body;
+        print('⚠️ Server error (500) when updating spreadsheet: $responseBody');
+        throw Exception(
+          'Server error: Unable to update spreadsheet. This might be a permission issue if updating from a different device.',
+        );
       } else {
         throw Exception(
           'Failed to update logsheet data: ${response.statusCode}',
@@ -315,7 +326,81 @@ class RestApiService {
   }
 
   // ===========================
-  // 📊 ANALYTICS ENDPOINTS (REST API)
+  // � PERMISSIONS ENDPOINTS
+  // ===========================
+
+  /// [POST] /api/logsheets/:fileId/permissions => Share spreadsheet dengan user lain
+  static Future<Map<String, dynamic>> shareSpreadsheet(
+    String fileId, {
+    required String emailAddress,
+    String role = 'writer', // reader, writer, owner
+    bool sendNotificationEmail = true,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/logsheets/$fileId/permissions');
+
+      final body = {
+        'emailAddress': emailAddress,
+        'role': role,
+        'sendNotificationEmail': sendNotificationEmail,
+      };
+
+      print(
+        '🔐 POST /api/logsheets/$fileId/permissions - Sharing with $emailAddress as $role',
+      );
+
+      final response = await http.post(
+        uri,
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Spreadsheet shared successfully with $emailAddress');
+        return data;
+      } else if (response.statusCode == 400) {
+        final error = jsonDecode(response.body);
+        throw Exception('Invalid sharing request: ${error['message']}');
+      } else if (response.statusCode == 404) {
+        throw Exception('Spreadsheet not found: $fileId');
+      } else {
+        throw Exception('Failed to share spreadsheet: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error sharing spreadsheet: $e');
+      rethrow;
+    }
+  }
+
+  /// [GET] /api/logsheets/:fileId/permissions => Get current permissions for spreadsheet
+  static Future<Map<String, dynamic>> getSpreadsheetPermissions(
+    String fileId,
+  ) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/logsheets/$fileId/permissions');
+
+      print('🔍 GET /api/logsheets/$fileId/permissions');
+
+      final response = await http.get(uri, headers: _headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Retrieved permissions for spreadsheet');
+        return data;
+      } else if (response.statusCode == 404) {
+        throw Exception('Spreadsheet not found: $fileId');
+      } else {
+        throw Exception('Failed to get permissions: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error getting permissions: $e');
+      rethrow;
+    }
+  }
+
+  // ===========================
+  // �📊 ANALYTICS ENDPOINTS (REST API)
   // ===========================
 
   /// [GET] /api/analytics/summary => Analisis data logsheet untuk dashboard

@@ -20,7 +20,8 @@ class GeneratorDataManager {
       // Bersihkanup file ID lama dulu
       await StorageService.cleanupOldFileIds(name);
 
-      final fileId = await StorageService.getActiveFileId(name) ?? '';
+      final fileId =
+          await StorageService.getFileIdWithFirestoreSync(name) ?? '';
       final isActive = await StorageService.getGeneratorStatus(name) ?? false;
 
       _generators[i]['fileId'] = fileId;
@@ -62,17 +63,15 @@ class GeneratorDataManager {
     }
   }
 
-  // Pastikan file ID konsisten untuk hari ini (SEMUA MESIN SAMA)
+  // Pastikan file ID konsisten untuk logsheet saat ini (SEMUA MESIN SAMA)
   static Future<void> ensureConsistentFileId(String name) async {
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = StorageService.formatLogsheetDateKey();
 
     print(
-      '🔍 GENERATOR_DATA: Ensuring consistent fileId for $name on $dateKey',
+      '🔍 GENERATOR_DATA: Ensuring consistent fileId for $name on logsheet date: $dateKey',
     );
 
-    final currentFileId = await StorageService.getActiveFileId(name);
+    final currentFileId = await StorageService.getFileIdWithFirestoreSync(name);
     if (currentFileId == null || currentFileId.isEmpty) {
       print(
         '⚠️ GENERATOR_DATA: No fileId found for $name, need to create new spreadsheet',

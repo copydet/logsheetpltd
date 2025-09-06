@@ -1,11 +1,34 @@
 ﻿import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'file_id_sync_service.dart';
 
 class StorageService {
   static const String _activeFileIdKey = 'active_file_id';
   static const String _generatorDataKey = 'generator_data';
   static const String _lastLogsheetDataKey = 'last_logsheet_data';
   static const String _generatorStatusKey = 'generator_status';
+
+  /// Menghitung tanggal logsheet berdasarkan logika bisnis:
+  /// - Logsheet baru dibuat setiap jam 10:00 pagi
+  /// - Jam 00:00-09:59 menggunakan logsheet dari hari sebelumnya
+  /// - Jam 10:00-23:59 menggunakan logsheet hari ini
+  static DateTime getLogsheetDate([DateTime? now]) {
+    final currentTime = now ?? DateTime.now();
+
+    // Jika jam sekarang 00:00-09:59, gunakan tanggal kemarin
+    if (currentTime.hour < 10) {
+      return DateTime(currentTime.year, currentTime.month, currentTime.day - 1);
+    }
+
+    // Jika jam 10:00-23:59, gunakan tanggal hari ini
+    return DateTime(currentTime.year, currentTime.month, currentTime.day);
+  }
+
+  /// Format tanggal logsheet menjadi string key
+  static String formatLogsheetDateKey([DateTime? now]) {
+    final logsheetDate = getLogsheetDate(now);
+    return '${logsheetDate.year}-${logsheetDate.month.toString().padLeft(2, '0')}-${logsheetDate.day.toString().padLeft(2, '0')}';
+  }
 
   // Simpan status generator (on/off)
   static Future<void> saveGeneratorStatus(
@@ -24,17 +47,15 @@ class StorageService {
     return prefs.getBool(key);
   }
 
-  // Simpan fileId aktif per generator dengan tanggal
+  // Simpan fileId aktif per generator dengan tanggal logsheet yang benar
   static Future<void> saveActiveFileId(
     String generatorName,
     String fileId,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = formatLogsheetDateKey();
 
-    // Simpan dengan key per tanggal untuk konsistensi
+    // Simpan dengan key per tanggal logsheet untuk konsistensi
     final key = '${_activeFileIdKey}_${generatorName}_$dateKey';
     await prefs.setString(key, fileId);
 
@@ -42,28 +63,28 @@ class StorageService {
     final legacyKey = '${_activeFileIdKey}_$generatorName';
     await prefs.setString(legacyKey, fileId);
 
-    print('🗄️ STORAGE: Saved fileId for $generatorName ($dateKey): $fileId');
+    print(
+      '🗄️ STORAGE: Saved fileId for $generatorName (logsheet date: $dateKey): $fileId',
+    );
   }
 
-  // Ambil fileId aktif per generator untuk hari ini
+  // Ambil fileId aktif per generator untuk logsheet saat ini (tanpa Firestore sync)
   static Future<String?> getActiveFileId(String generatorName) async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = formatLogsheetDateKey();
 
-    // Coba ambil file ID untuk hari ini dulu
-    final todayKey = '${_activeFileIdKey}_${generatorName}_$dateKey';
-    final todayFileId = prefs.getString(todayKey);
+    // Coba ambil file ID untuk logsheet tanggal ini
+    final logsheetKey = '${_activeFileIdKey}_${generatorName}_$dateKey';
+    final logsheetFileId = prefs.getString(logsheetKey);
 
-    if (todayFileId != null && todayFileId.isNotEmpty) {
+    if (logsheetFileId != null && logsheetFileId.isNotEmpty) {
       print(
-        '🗄️ STORAGE: Found today fileId for $generatorName ($dateKey): $todayFileId',
+        '🗄️ STORAGE: Found logsheet fileId for $generatorName (logsheet date: $dateKey): $logsheetFileId',
       );
-      return todayFileId;
+      return logsheetFileId;
     }
 
-    // Fallback ke legacy key jika tidak ada file ID hari ini
+    // Fallback ke legacy key jika tidak ada file ID logsheet
     final legacyKey = '${_activeFileIdKey}_$generatorName';
     final legacyFileId = prefs.getString(legacyKey);
 
@@ -74,8 +95,49 @@ class StorageService {
       return legacyFileId;
     }
 
-    print('🗄️ STORAGE: No fileId found for $generatorName on $dateKey');
+    print(
+      '🗄️ STORAGE: No fileId found for $generatorName on logsheet date: $dateKey',
+    );
     return null;
+  }
+
+  // Ambil fileId dengan sinkronisasi Firestore (method terpisah)
+  static Future<String?> getFileIdWithFirestoreSync(
+    String generatorName,
+  ) async {
+    // 🔥 PRIORITAS 1: Coba ambil dari Firestore untuk konsistensi cross-device
+    try {
+      final firestoreFileId = await FileIdSyncService.getConsistentFileId(
+        generatorName,
+      );
+      if (firestoreFileId != null && firestoreFileId.isNotEmpty) {
+        print(
+          '✅ STORAGE: Using synced fileId from Firestore for $generatorName: $firestoreFileId',
+        );
+        return firestoreFileId;
+      }
+    } catch (e) {
+      print(
+        '⚠️ STORAGE: Failed to get fileId from Firestore for $generatorName: $e',
+      );
+    }
+
+    // PRIORITAS 2: Fallback ke local storage
+    final localFileId = await getActiveFileId(generatorName);
+    if (localFileId != null && localFileId.isNotEmpty) {
+      // Sync ke Firestore untuk device lain
+      try {
+        await FileIdSyncService.saveFileIdToFirestore(
+          generatorName: generatorName,
+          fileId: localFileId,
+          createdBy: 'local_storage_sync',
+        );
+      } catch (e) {
+        print('⚠️ STORAGE: Failed to sync local fileId to Firestore: $e');
+      }
+    }
+
+    return localFileId;
   }
 
   // Bersihkan file ID lama (file ID kemarin/hari sebelumnya)
@@ -99,33 +161,29 @@ class StorageService {
     }
   }
 
-  // 🏪 CACHE: Simpan status hasData untuk jam tertentu dengan tanggal PER GENERATOR
+  // 🏪 CACHE: Simpan status hasData untuk jam tertentu dengan tanggal logsheet yang benar
   static Future<void> setHourDataStatus(
     String generatorName,
     int hour,
     bool hasData,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = formatLogsheetDateKey();
     await prefs.setBool(
       'hasData_${dateKey}_${generatorName}_hour_$hour',
       hasData,
     );
   }
 
-  // 🏪 CACHE: Ambil status hasData untuk jam tertentu dengan tanggal PER GENERATOR
+  // 🏪 CACHE: Ambil status hasData untuk jam tertentu dengan tanggal logsheet yang benar
   static Future<bool> getHourDataStatus(String generatorName, int hour) async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = formatLogsheetDateKey();
     return prefs.getBool('hasData_${dateKey}_${generatorName}_hour_$hour') ??
         false;
   }
 
-  // 🧹 CACHE CLEANUP: Bersihkan cache jam untuk hari sebelumnya PER GENERATOR
+  // 🧹 CACHE CLEANUP: Bersihkan cache jam untuk logsheet sebelumnya
   static Future<void> cleanupOldHourDataCache() async {
     final prefs = await SharedPreferences.getInstance();
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
@@ -133,7 +191,12 @@ class StorageService {
         '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
 
     // Daftar generator yang dikenal
-    final generators = ['Mitsubishi #3', 'Mitsubishi #4'];
+    final generators = [
+      'Mitsubishi #1',
+      'Mitsubishi #2',
+      'Mitsubishi #3',
+      'Mitsubishi #4',
+    ];
 
     // Hapus cache untuk semua jam hari kemarin (0-23) untuk semua generator
     for (String generator in generators) {
@@ -146,18 +209,16 @@ class StorageService {
     );
   }
 
-  // 🔄 CACHE RESET: Reset status untuk jam tertentu hari ini PER GENERATOR (untuk jam baru)
+  // 🔄 CACHE RESET: Reset status untuk jam tertentu pada logsheet saat ini
   static Future<void> resetCurrentHourDataStatus(
     String generatorName,
     int hour,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = formatLogsheetDateKey();
     await prefs.remove('hasData_${dateKey}_${generatorName}_hour_$hour');
     print(
-      '🔄 CACHE: Reset hour data status for $generatorName hour $hour on $dateKey',
+      '🔄 CACHE: Reset hour data status for $generatorName hour $hour on logsheet date: $dateKey',
     );
   }
 

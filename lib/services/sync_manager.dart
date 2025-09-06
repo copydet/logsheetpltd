@@ -491,8 +491,13 @@ class SyncManager {
       final dateStr = sevenDaysAgo.toIso8601String().split('T')[0];
 
       // Listen to all mitsubishi collections for comprehensive sync
-      final collections = ['mitsubishi_1', 'mitsubishi_2', 'mitsubishi_3', 'mitsubishi_4'];
-      
+      final collections = [
+        'mitsubishi_1',
+        'mitsubishi_2',
+        'mitsubishi_3',
+        'mitsubishi_4',
+      ];
+
       for (String collection in collections) {
         _firestore
             .collection(collection)
@@ -501,7 +506,9 @@ class SyncManager {
             .listen(
               _handleFirestoreUpdates,
               onError: (error) {
-                print('❌ SYNC: Firestore listener error for $collection: $error');
+                print(
+                  '❌ SYNC: Firestore listener error for $collection: $error',
+                );
                 _addSyncError('Real-time sync error for $collection: $error');
               },
             );

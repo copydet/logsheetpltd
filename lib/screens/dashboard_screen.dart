@@ -261,9 +261,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         }
       } catch (e) {
-        print(
-          '⚠️ DASHBOARD: Google Sheets data not available for $generatorName: $e',
-        );
+        if (e.toString().contains('404')) {
+          print(
+            '! DASHBOARD: Google Sheets data not available for $generatorName: $e',
+          );
+        } else {
+          print(
+            '⚠️ DASHBOARD: Google Sheets data not available for $generatorName: $e',
+          );
+        }
         sheetsData = null;
       }
 
