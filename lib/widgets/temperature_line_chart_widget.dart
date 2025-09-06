@@ -490,8 +490,8 @@ class _TemperatureLineChartWidgetState
   // ========================================================================
 
   /// Generate data temperature untuk chart berdasarkan prioritas:
-  /// 1. Data SQLite database (offline-first, data lokal user)
-  /// 2. Data Firestore (fallback untuk multi-user data)
+  /// 1. Data Firestore (cross-device synchronized data - PRIORITAS UTAMA)
+  /// 2. Data SQLite database (offline-first, data lokal user)
   /// 3. Data real dari spreadsheet (allHourlyData)
   /// 4. Current real-time value
   Future<List<FlSpot>> _generateTemperatureData(
@@ -506,17 +506,17 @@ class _TemperatureLineChartWidgetState
       print('📊 Parameter: $paramKey');
       print('�🌡️ CHART: Loading temperature data for $paramKey');
 
-      // PRIORITAS 1: Gunakan data SQLite database (offline-first)
-      spots = await _extractSpotsFromSQLiteDatabase(paramKey, config);
+      // PRIORITAS 1: Gunakan data Firestore (cross-device synchronized)
+      spots = await _extractSpotsFromFirestore(paramKey, config);
       if (spots.isNotEmpty) {
-        print('✅ 🌡️ CHART: Using SQLite database (${spots.length} points)');
+        print('✅ 🌡️ CHART: Using Firestore synchronized data (${spots.length} points)');
         return spots;
       }
 
-      // PRIORITAS 2: Gunakan data Firestore (fallback multi-user)
-      spots = await _extractSpotsFromFirestore(paramKey, config);
+      // PRIORITAS 2: Gunakan data SQLite database (offline fallback)
+      spots = await _extractSpotsFromSQLiteDatabase(paramKey, config);
       if (spots.isNotEmpty) {
-        print('✅ 🌡️ CHART: Using Firestore data (${spots.length} points)');
+        print('✅ 🌡️ CHART: Using SQLite local data (${spots.length} points)');
         return spots;
       }
 

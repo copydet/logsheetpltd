@@ -11,16 +11,16 @@ class LogsheetService {
   static const String _baseUrl =
       'https://us-central1-powerplantlogsheet-8780a.cloudfunctions.net/api';
 
-  /// Creates a new logsheet based on the template
+  /// Membuat logsheet baru berdasarkan template
   ///
-  /// BUSINESS LOGIC: Every day, users create a NEW spreadsheet for that day.
-  /// Each spreadsheet has a unique fileId that gets synced across devices.
+  /// BUSINESS LOGIC: Setiap hari, user membuat spreadsheet BARU untuk hari tersebut.
+  /// Setiap spreadsheet memiliki fileId unik yang disinkronisasi antar device.
   ///
-  /// @param generatorName - Name of the generator (e.g., 'Mitsubishi #1')
-  /// @param templateFileId - Optional: Custom template to copy from
-  /// @param targetFolderId - Optional: Custom folder to create the logsheet in
+  /// @param generatorName - Nama generator (contoh: 'Mitsubishi #1')
+  /// @param templateFileId - Opsional: Template khusus untuk di-copy
+  /// @param targetFolderId - Opsional: Folder khusus untuk membuat logsheet
   ///
-  /// Returns: Map with fileId, fileName, and webViewLink of the created logsheet
+  /// Hasil: Map dengan fileId, fileName, dan webViewLink dari logsheet yang dibuat
   static Future<Map<String, dynamic>> createLogsheet(
     String generatorName, {
     String? templateFileId,
@@ -51,7 +51,7 @@ class LogsheetService {
 
       final String newFileName = 'Logsheet $generatorName, $formattedDate';
 
-      // Use provided IDs or fallback to config-based defaults
+      // Gunakan ID yang disediakan atau fallback ke default berbasis config
       final String effectiveTemplateFileId =
           templateFileId ?? GoogleDriveConfig.getTemplateFileId(generatorName);
       final String effectiveTargetFolderId =
@@ -90,10 +90,10 @@ class LogsheetService {
           );
         } catch (e) {
           print('⚠️ FILE_SYNC: Failed to save fileId to Firestore: $e');
-          // Don't fail the operation if Firestore save fails
+          // Jangan gagalkan operasi jika penyimpanan Firestore gagal
         }
 
-        // Auto-share with team members to prevent permission issues
+        // Bagikan otomatis dengan anggota tim untuk mencegah masalah izin
         try {
           await autoShareWithTeam(fileId);
           print('✅ PERMISSIONS: Auto-shared logsheet with team members');
@@ -101,7 +101,7 @@ class LogsheetService {
           print(
             '⚠️ PERMISSIONS: Auto-share failed, but logsheet creation succeeded: $e',
           );
-          // Don't fail the entire operation if sharing fails
+          // Jangan gagalkan seluruh operasi jika sharing gagal
         }
 
         return {
@@ -128,20 +128,20 @@ class LogsheetService {
     }
   }
 
-  /// Auto-share logsheet with known team members to prevent permission issues
+  /// Bagikan otomatis logsheet dengan anggota tim yang sudah dikenal untuk mencegah masalah izin
   static Future<void> autoShareWithTeam(String fileId) async {
     final List<String> teamEmails = [
       'sony@pltd.com',
       'dimas@pltd.com',
       'admin@pltd.com',
-      // Add more team member emails as needed
+      // Tambahkan lebih banyak email anggota tim sesuai kebutuhan
     ];
 
     print(
       '� AUTO_SHARE: Starting auto-share for fileId: $fileId with ${teamEmails.length} team members',
     );
 
-    // First check if we can access the spreadsheet permissions
+    // Pertama periksa apakah kita bisa mengakses izin spreadsheet
     try {
       await RestApiService.getSpreadsheetPermissions(fileId);
       print('📋 AUTO-SHARE: Current permissions retrieved successfully');
@@ -158,17 +158,17 @@ class LogsheetService {
           fileId,
           emailAddress: email,
           role: 'writer',
-          sendNotificationEmail: false, // Don't spam with notifications
+          sendNotificationEmail: false, // Jangan spam dengan notifikasi
         );
         successCount++;
         print('✅ PERMISSIONS: Successfully shared spreadsheet with $email');
 
-        // Small delay between sharing requests to avoid rate limiting
+        // Jeda kecil antara permintaan sharing untuk menghindari rate limiting
         await Future.delayed(const Duration(milliseconds: 500));
       } catch (e) {
         failureCount++;
         print('⚠️ PERMISSIONS: Failed to share with $email: $e');
-        // Continue with other emails even if one fails
+        // Lanjutkan dengan email lain meskipun satu gagal
       }
     }
 
@@ -189,19 +189,19 @@ class LogsheetService {
     }
   }
 
-  /// Smart save with automatic permission handling
+  /// Simpan cerdas dengan penanganan izin otomatis
   static Future<void> saveLogsheetDataSmart(
     String fileId,
     Map<String, dynamic> logsheetData,
   ) async {
     try {
-      // First attempt: normal save
+      // Percobaan pertama: simpan normal
       await saveLogsheetData(fileId, logsheetData);
       print('✅ SMART SAVE: Data berhasil disimpan ke Google Sheets');
     } catch (e) {
       String errorMessage = e.toString().toLowerCase();
 
-      // Enhanced error detection for permission issues (case-insensitive)
+      // Deteksi error yang disempurnakan untuk masalah izin (case-insensitive)
       bool isPermissionError =
           errorMessage.contains('unable to update spreadsheet') ||
           errorMessage.contains('permission denied') ||
@@ -220,16 +220,16 @@ class LogsheetService {
         );
 
         try {
-          // Try to auto-share with team members first
+          // Coba auto-share dengan anggota tim terlebih dahulu
           await autoShareWithTeam(fileId);
           print(
             '✅ SMART SAVE: Auto-share completed, waiting for permissions to propagate...',
           );
 
-          // Wait longer for Google permissions to propagate
+          // Tunggu lebih lama agar izin Google dapat dipropagasi
           await Future.delayed(const Duration(seconds: 5));
 
-          // Try multiple retries with increasing delays
+          // Coba beberapa retry dengan delay yang bertambah
           for (int retry = 0; retry < 3; retry++) {
             try {
               print(
@@ -239,11 +239,11 @@ class LogsheetService {
               print(
                 '✅ SMART SAVE: Data berhasil disimpan setelah auto-share (attempt ${retry + 1})',
               );
-              return; // Success, exit the method
+              return; // Berhasil, keluar dari method
             } catch (retryError) {
               print('⚠️ SMART SAVE: Retry ${retry + 1} failed: $retryError');
               if (retry < 2) {
-                // Wait progressively longer for each retry
+                // Tunggu semakin lama untuk setiap retry
                 print(
                   '⏰ RETRY_DELAY: Waiting ${(retry + 1) * 3} seconds before next attempt...',
                 );
@@ -252,27 +252,27 @@ class LogsheetService {
             }
           }
 
-          // All retries failed
+          // Semua retry gagal
           print('❌ SMART SAVE: All retries failed after auto-share');
           throw Exception(
             'Failed to save after auto-sharing and multiple retries: ${e.toString()}',
           );
         } catch (shareError) {
           print('❌ SMART SAVE: Auto-share failed: $shareError');
-          // Re-throw the original error with additional context
+          // Lempar ulang error asli dengan konteks tambahan
           throw Exception(
             'Permission issue detected and auto-share failed. Original error: ${e.toString()}',
           );
         }
       } else {
-        // Non-permission error, just rethrow
+        // Error non-permission, langsung throw ulang
         print('❌ SMART SAVE: Non-permission error: $e');
         rethrow;
       }
     }
   }
 
-  /// Enhanced version with graceful degradation - saves to both Sheets and local DB
+  /// Versi yang disempurnakan dengan graceful degradation - simpan ke Sheets dan DB lokal
   static Future<Map<String, dynamic>> saveLogsheetDataWithFallback(
     String fileId,
     Map<String, dynamic> logsheetData,
@@ -287,13 +287,13 @@ class LogsheetService {
     String? googleSheetsError;
     bool permissionIssueDetected = false;
 
-    // Pre-check: Try to verify access to the spreadsheet first
+    // Pre-check: Coba verifikasi akses ke spreadsheet terlebih dahulu
     try {
       await RestApiService.getSpreadsheetPermissions(fileId);
       print('✅ PRE-CHECK: Spreadsheet access verified');
     } catch (e) {
       print('⚠️ PRE-CHECK: Cannot access spreadsheet permissions: $e');
-      // This might indicate a permission issue - trigger proactive sharing
+      // Ini mungkin menunjukkan masalah izin - lakukan sharing proaktif
       String errorMsg = e.toString().toLowerCase();
       if (errorMsg.contains('404') ||
           errorMsg.contains('not found') ||
@@ -315,7 +315,7 @@ class LogsheetService {
     }
 
     try {
-      // Try smart save (includes auto-share for permissions)
+      // Coba smart save (termasuk auto-share untuk izin)
       await saveLogsheetDataSmart(fileId, logsheetData);
       googleSheetsSuccess = true;
       print('✅ SHEETS: Data berhasil disimpan ke Google Sheets (smart save)');
@@ -323,7 +323,7 @@ class LogsheetService {
       googleSheetsError = e.toString();
       print('❌ SHEETS: Gagal simpan ke Google Sheets: $e');
 
-      // Enhanced error analysis
+      // Analisis error yang disempurnakan
       String errorMessage = e.toString().toLowerCase();
       if (errorMessage.contains('permission') ||
           errorMessage.contains('500') ||
@@ -358,13 +358,13 @@ class LogsheetService {
       print('❌ DATABASE: Gagal simpan ke local database: $e');
     }
 
-    // Return comprehensive status
+    // Kembalikan status komprehensif
     return {
       'googleSheetsSuccess': googleSheetsSuccess,
       'localStorageSuccess': localStorageSuccess,
       'googleSheetsError': googleSheetsError,
       'permissionIssueDetected': permissionIssueDetected,
-      'success': localStorageSuccess, // Overall success if at least local works
+      'success': localStorageSuccess, // Sukses keseluruhan jika setidaknya lokal berhasil
     };
   }
 
@@ -386,7 +386,7 @@ class LogsheetService {
 
       print('🔧 SERVICE: Saving data to fileId: $fileId');
 
-      // Ambil current hour to determine row number
+      // Ambil jam saat ini untuk menentukan nomor baris
       final now = DateTime.now();
       final hour = now.hour;
       final minute = now.minute;
@@ -621,7 +621,7 @@ class LogsheetService {
     }
   }
 
-  /// Ceks if data exists for a specific hour
+  /// Cek apakah data ada untuk jam tertentu
   static Future<bool> checkHourHasData(String fileId, int hour) async {
     try {
       print('🔍 SERVICE: checkHourHasData called for hour $hour');
@@ -683,7 +683,7 @@ class LogsheetService {
     }
   }
 
-  /// Validasis if a file exists in Google Drive
+  /// Validasi apakah file ada di Google Drive
   static Future<bool> validateFileExists(String fileId) async {
     try {
       print('🔍 VALIDATE:  if file exists: $fileId');
@@ -719,7 +719,7 @@ class LogsheetService {
     }
   }
 
-  /// Hapuss a logsheet from Google Drive
+  /// Hapus logsheet dari Google Drive
   static Future<Map<String, dynamic>> deleteLogsheet(
     String fileId, {
     bool permanent = false,
