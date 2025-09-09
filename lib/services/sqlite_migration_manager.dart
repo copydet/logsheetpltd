@@ -1,4 +1,4 @@
-﻿import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart';
 import 'database_service.dart';
 
 /// Manager untuk mengelola migrasi SQLite database
@@ -8,46 +8,48 @@ class SQLiteMigrationManager {
   /// Melakukan migrasi database jika diperlukan
   static Future<bool> performMigration() async {
     try {
-      print('📊 MIGRASI: Memulai proses migrasi SQLite...');
-      
+      print('MIGRASI: Memulai proses migrasi SQLite...');
+
       final dbService = DatabaseService();
       final db = await dbService.database;
       final version = await db.getVersion();
-      
-      print('📊 MIGRASI: Versi database saat ini: $version');
-      print('📊 MIGRASI: Versi target: $_currentVersion');
-      
+
+      print('MIGRASI: Versi database saat ini: $version');
+      print('MIGRASI: Versi target: $_currentVersion');
+
       if (version < _currentVersion) {
-        print('📊 MIGRASI: Memerlukan migrasi dari versi $version ke $_currentVersion');
-        
+        print(
+          'MIGRASI: Memerlukan migrasi dari versi $version ke $_currentVersion',
+        );
+
         // Lakukan migrasi berdasarkan versi
         for (int v = version + 1; v <= _currentVersion; v++) {
           await _migrateToVersion(db, v);
         }
-        
+
         await db.setVersion(_currentVersion);
-        print('✅ MIGRASI: Berhasil diupgrade ke versi $_currentVersion');
+        print('MIGRASI: Berhasil diupgrade ke versi $_currentVersion');
       } else {
-        print('✅ MIGRASI: Database sudah pada versi terbaru');
+        print('MIGRASI: Database sudah pada versi terbaru');
       }
-      
+
       return true;
     } catch (e) {
-      print('❌ MIGRASI: Gagal melakukan migrasi: $e');
+      print('MIGRASI: Gagal melakukan migrasi: $e');
       return false;
     }
   }
 
   /// Migrasi ke versi tertentu
   static Future<void> _migrateToVersion(Database db, int version) async {
-    print('📊 MIGRASI: Melakukan migrasi ke versi $version...');
-    
+    print('MIGRASI: Melakukan migrasi ke versi $version...');
+
     switch (version) {
       case 1:
         await _migrateToV1(db);
         break;
       default:
-        print('⚠️ MIGRASI: Versi $version tidak dikenal');
+        print('MIGRASI: Versi $version tidak dikenal');
     }
   }
 
@@ -87,9 +89,9 @@ class SQLiteMigrationManager {
         )
       ''');
 
-      print('✅ MIGRASI: Tabel-tabel versi 1 berhasil dibuat');
+      print('MIGRASI: Tabel-tabel versi 1 berhasil dibuat');
     } catch (e) {
-      print('❌ MIGRASI: Gagal membuat tabel versi 1: $e');
+      print('MIGRASI: Gagal membuat tabel versi 1: $e');
       rethrow;
     }
   }
@@ -106,7 +108,7 @@ class SQLiteMigrationManager {
       final dbService = DatabaseService();
       final db = await dbService.database;
       final now = DateTime.now().toIso8601String();
-      
+
       await db.insert('temperature_data', {
         'generator_name': generatorName,
         'shift': shift,
@@ -116,10 +118,10 @@ class SQLiteMigrationManager {
         'created_at': now,
         'synced': 0,
       });
-      
-      print('✅ TEMP DATA: Data suhu berhasil disimpan ke SQLite');
+
+      print('TEMP DATA: Data suhu berhasil disimpan ke SQLite');
     } catch (e) {
-      print('❌ TEMP DATA: Gagal menyimpan data suhu: $e');
+      print('TEMP DATA: Gagal menyimpan data suhu: $e');
       rethrow;
     }
   }
@@ -135,11 +137,11 @@ class SQLiteMigrationManager {
         whereArgs: [0],
         orderBy: 'created_at ASC',
       );
-      
-      print('📊 TEMP DATA: Ditemukan ${.length} data yang belum disync');
+
+      print('TEMP DATA: Ditemukan ${result.length} data yang belum disync');
       return result;
     } catch (e) {
-      print('❌ TEMP DATA: Gagal mengambil data yang belum disync: $e');
+      print('TEMP DATA: Gagal mengambil data yang belum disync: $e');
       return [];
     }
   }
@@ -150,7 +152,7 @@ class SQLiteMigrationManager {
       final dbService = DatabaseService();
       final db = await dbService.database;
       final batch = db.batch();
-      
+
       for (final id in ids) {
         batch.update(
           'temperature_data',
@@ -159,11 +161,11 @@ class SQLiteMigrationManager {
           whereArgs: [id],
         );
       }
-      
+
       await batch.commit();
-      print('✅ TEMP DATA: ${ids.length} data berhasil ditandai sebagai tersync');
+      print('TEMP DATA: ${ids.length} data berhasil ditandai sebagai tersync');
     } catch (e) {
-      print('❌ TEMP DATA: Gagal menandai data sebagai tersync: $e');
+      print('TEMP DATA: Gagal menandai data sebagai tersync: $e');
       rethrow;
     }
   }
@@ -174,20 +176,16 @@ class SQLiteMigrationManager {
       final dbService = DatabaseService();
       final db = await dbService.database;
       final now = DateTime.now().toIso8601String();
-      
-      await db.insert(
-        'migration_status',
-        {
-          'key': key,
-          'value': value,
-          'updated_at': now,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      
-      print('✅ MIGRASI: Status migrasi $key berhasil diupdate');
+
+      await db.insert('migration_status', {
+        'key': key,
+        'value': value,
+        'updated_at': now,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      print('MIGRASI: Status migrasi $key berhasil diupdate');
     } catch (e) {
-      print('❌ MIGRASI: Gagal update status migrasi: $e');
+      print('MIGRASI: Gagal update status migrasi: $e');
     }
   }
 
@@ -202,14 +200,14 @@ class SQLiteMigrationManager {
         whereArgs: [key],
         limit: 1,
       );
-      
+
       if (result.isNotEmpty) {
         return result.first['value'] as String;
       }
-      
+
       return null;
     } catch (e) {
-      print('❌ MIGRASI: Gagal mengambil status migrasi: $e');
+      print('MIGRASI: Gagal mengambil status migrasi: $e');
       return null;
     }
   }
@@ -222,16 +220,16 @@ class SQLiteMigrationManager {
       final cutoffDate = DateTime.now()
           .subtract(Duration(days: daysToKeep))
           .toIso8601String();
-      
+
       final deletedCount = await db.delete(
         'temperature_data',
         where: 'created_at < ? AND synced = ?',
         whereArgs: [cutoffDate, 1],
       );
-      
-      print('✅ CLEANUP: $deletedCount data lama berhasil dibersihkan');
+
+      print('CLEANUP: $deletedCount data lama berhasil dibersihkan');
     } catch (e) {
-      print('❌ CLEANUP: Gagal membersihkan data lama: $e');
+      print('CLEANUP: Gagal membersihkan data lama: $e');
     }
   }
 }

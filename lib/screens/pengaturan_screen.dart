@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/shift_photo_service.dart';
 import '../models/firebase_user_model.dart';
@@ -55,7 +55,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
         });
       }
     } catch (e) {
-      print(' loading shift photo data: $e');
+      print('Error loading shift photo data: $e');
     }
   }
 
@@ -68,7 +68,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
         });
       }
     } catch (e) {
-      print(' loading current user: $e');
+      print('Error loading current user: $e');
     }
   }
 
@@ -270,7 +270,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
                           ),
                         ),
                         Text(
-                          currentUser?.email ?? 'Loading email...',
+                          currentUser?.email ?? 'Loading user...',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.black54,
@@ -480,7 +480,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
                   _buildMenuItem(
                     Icons.info_outline,
                     'Tentang Aplikasi',
-                    subtitle: 'Versi 2.1.0',
+                    subtitle: 'Versi 7.7.7',
                   ),
 
                   const SizedBox(height: 10),
@@ -543,11 +543,11 @@ class _PengaturanScreenState extends State<PengaturanScreen>
                     child: Column(
                       children: const [
                         Text(
-                          'PLTD Logsheet v2.1.0',
+                          'Power Plant Logsheet v7.7.7',
                           style: TextStyle(fontSize: 11, color: Colors.black38),
                         ),
                         Text(
-                          '© 2023 PT Pembangkit Listrik',
+                          '© 2025 PT Dunia ini Keras',
                           style: TextStyle(fontSize: 11, color: Colors.black38),
                         ),
                       ],

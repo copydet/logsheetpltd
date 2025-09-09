@@ -476,7 +476,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 11, color: Colors.black38),
                 ),
                 const Text(
-                  '© 2023 PT Pembangkit Listrik Nusantara',
+                  '© 2025 Universitas Siber Asia - Supriyadi',
                   style: TextStyle(fontSize: 11, color: Colors.black38),
                 ),
               ],

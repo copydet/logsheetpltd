@@ -34,6 +34,10 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   // State untuk tracking data energi/BBM
   bool _hasEnergyBbmData = false;
 
+  // Real-time sync untuk cross-device collaboration
+  StreamSubscription? _firestoreListener;
+  Timer? _periodicDataChecker;
+
   // Collaboration features disabled to avoid extra Firestore collections
   // bool _isFormLocked = false;
 
@@ -80,19 +84,22 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _scaffoldMessenger = ScaffoldMessenger.of(context);
-      print('Memulai inisialisasi form logsheet');
+      print('LOGSHEET: Mulai inisialisasi form...');
       _initializeFormMode();
       await _loadPreviousDayEnergyData(); // Auto-fill kWh dan BBM awal dari hari sebelumnya
 
       // Tambahkan delay kecil untuk memastikan _activeFileId sudah tersedia
       await Future.delayed(const Duration(milliseconds: 500));
-      await _loadExistingEnergyData(); // Muat data energi/BBM yang sudah tersimpan
+      await _loadExistingEnergyData(); // Load data energi/BBM yang sudah tersimpan
 
       // Cek collision prevention
       await _checkEditingCollision();
 
-      // Atur up form change listeners for real-time collaboration
+      // Set up form change listeners for real-time collaboration
       _setupFormChangeListeners();
+
+      // Set up real-time sync untuk cross-device collaboration
+      _setupRealtimeSync();
     });
   }
 
@@ -106,9 +113,14 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   @override
   void didUpdateWidget(LogsheetFormScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    print('Widget diperbarui, refresh mode form');
+    print('LOGSHEET: Form diperbarui, refresh mode dan sync...');
     // Refresh form mode ketika widget diupdate (misalnya kembali dari page lain)
     _initializeFormMode();
+
+    // Re-setup real-time sync jika diperlukan
+    if (_firestoreListener == null) {
+      _setupRealtimeSync();
+    }
   }
 
   // Schedule refresh otomatis setiap pergantian jam
@@ -117,11 +129,11 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
     final timeUntilNextHour = nextHour.difference(now);
 
-    print('Jadwalkan refresh dalam \ menit');
+    print('JADWAL: Refresh dalam ${timeUntilNextHour.inMinutes} menit');
 
     Future.delayed(timeUntilNextHour, () {
       if (mounted) {
-        print('Jam berubah ke \, refresh mode form');
+        print('JADWAL: Jam berubah ke ${DateTime.now().hour}, refresh form');
         _initializeFormMode();
         _scheduleHourlyRefresh(); // Schedule next refresh
       }
@@ -164,12 +176,12 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         hour: currentHour,
       );
 
-      // Pengaturan heartbeat untuk update aktivitas
+      // Setup heartbeat untuk update aktivitas
       _startActivityHeartbeat();
 
-      print('✅ COLLABORATION: Sesi editing dimulai fully');
+      print('KOLABORASI: Mulai sesi edit');
     } catch (e) {
-      print('❌ COLLABORATION: Error  collision: $e');
+      print('KOLABORASI: Error cek konflik: $e');
       // Jika error, lanjutkan saja (fail safe)
     }
   }
@@ -188,9 +200,9 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     });
   }
 
-  // Pengaturan listeners untuk real-time collaboration
+  // Setup listeners untuk real-time collaboration
   void _setupFormChangeListeners() {
-    // Atur up listeners untuk semua text controller
+    // Set up listeners untuk semua text controller
     final controllers = [
       _jamOperasiController,
       _rpmController,
@@ -217,7 +229,176 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     ];
 
     for (final controller in controllers) {
-      controller.addListener(_onFormDataChanged);
+      // Only add listener if widget is still mounted and controller is valid
+      if (!mounted) return;
+      try {
+        controller.addListener(_onFormDataChanged);
+      } catch (e) {
+        print('⚠️ Controller already disposed or error adding listener: $e');
+      }
+    }
+  }
+
+  // Setup real-time sync untuk cross-device collaboration
+  void _setupRealtimeSync() {
+    try {
+      print(
+        '🔄 FORM_SYNC: Setting up real-time sync for ${widget.generatorName}',
+      );
+
+      // Cancel existing listener jika ada
+      _firestoreListener?.cancel();
+
+      // Listen untuk updates dari Firestore untuk generator ini
+      _firestoreListener = FirestoreRealtimeService.listenToRealtimeUpdates(
+        [widget.generatorName],
+        (data) {
+          if (mounted && data.containsKey(widget.generatorName)) {
+            final generatorData = data[widget.generatorName]!;
+            print(
+              '🔄 FORM_SYNC: Received real-time data: ${generatorData.keys.length} fields',
+            );
+            _handleRealtimeUpdate(generatorData);
+          }
+        },
+      );
+
+      // Setup periodic checker untuk detect Google Sheets changes
+      _setupPeriodicDataChecker();
+
+      print('✅ FORM_SYNC: Real-time sync listener active');
+    } catch (e) {
+      print('❌ FORM_SYNC: Failed to setup real-time sync: $e');
+    }
+  }
+
+  // Setup periodic checker untuk detect changes di Google Sheets
+  void _setupPeriodicDataChecker() {
+    _periodicDataChecker?.cancel();
+
+    _periodicDataChecker = Timer.periodic(Duration(seconds: 30), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      try {
+        print('🔍 PERIODIC_CHECK: Checking for data changes...');
+
+        // Clear cache sebelum check untuk memastikan data fresh
+        final currentHour = DateTime.now().hour;
+        await StorageService.resetCurrentHourDataStatus(
+          widget.generatorName,
+          currentHour,
+        );
+
+        bool hasData = await _checkIfCurrentHourHasDataInSpreadsheet();
+
+        if (hasData && !_hasExistingData) {
+          print('📥 PERIODIC_CHECK: Found new data from another device!');
+
+          // Load data terbaru
+          await _loadExistingData();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.sync, color: Colors.white),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Data baru terdeteksi dari device lain! Form beralih ke mode edit.',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print('❌ PERIODIC_CHECK: Error checking for data changes: $e');
+      }
+    });
+
+    print('✅ PERIODIC_CHECK: Periodic data checker started (30s interval)');
+  }
+
+  // Handle real-time updates dari device lain
+  void _handleRealtimeUpdate(Map<String, dynamic> generatorData) {
+    try {
+      final currentHour = DateTime.now().hour;
+      final dataHour =
+          int.tryParse(generatorData['jamOperasi']?.toString() ?? '0') ?? 0;
+
+      print(
+        '🔄 FORM_SYNC: Processing real-time update for data hour $dataHour, current hour $currentHour',
+      );
+      print('📊 FORM_SYNC: Update data keys: ${generatorData.keys.toList()}');
+
+      // Hanya proses update jika untuk jam yang sama atau data memiliki informasi jam
+      if (dataHour == currentHour ||
+          generatorData.containsKey('kwhAwal') ||
+          generatorData.containsKey('bbmAwal')) {
+        print(
+          '📥 FORM_SYNC: Received valid real-time update for current session',
+        );
+
+        // Update form state dan data
+        if (mounted) {
+          setState(() {
+            _hasExistingData = true;
+            _existingData = Map<String, dynamic>.from(generatorData);
+
+            print(
+              '🔄 FORM_SYNC: State updated - hasExistingData: $_hasExistingData',
+            );
+          });
+
+          // Fill form dengan data yang baru diterima
+          _fillFormWithExistingData(generatorData);
+
+          print('✅ FORM_SYNC: Form updated with data from another device');
+
+          // Show notification kepada user
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.sync, color: Colors.white),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Data diperbarui dari device lain! Form sekarang dalam mode edit.',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.blue[600],
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+
+          // Force rebuild widget untuk update button state
+          if (mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
+          }
+        }
+      } else {
+        print(
+          'ℹ️ FORM_SYNC: Skipping update - data hour $dataHour does not match current hour $currentHour',
+        );
+      }
+    } catch (e) {
+      print('❌ FORM_SYNC: Error handling real-time update: $e');
     }
   }
 
@@ -232,7 +413,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   // Pull-to-refresh handler
   Future<void> _refreshFormData() async {
     final currentHour = DateTime.now().hour;
-    print('🔄 Refresh form untuk jam: $currentHour');
+    print('FORM: Refresh untuk jam: $currentHour');
 
     _scaffoldMessenger.showSnackBar(
       SnackBar(
@@ -258,7 +439,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   //   // });
   // }
 
-  // Simpan current form data sebagai draft untuk collaboration - DISABLED
+  // Save current form data sebagai draft untuk collaboration - DISABLED
   // Future<void> _saveCurrentFormDataAsDraft() async {
   //   if (_isFormLocked) return;
 
@@ -269,9 +450,9 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   //       hour: DateTime.now().hour,
   //       formData: formData,
   //     );
-  //     print('💾 : Draft form auto-save');
+  //     print('💾 COLLABORATION: Auto-saved form draft');
   //   } catch (e) {
-  //     print('❌ COLLABORATION:  auto-saving draft: $e');
+  //     print('❌ COLLABORATION: Error auto-saving draft: $e');
   //   }
   // }
 
@@ -307,24 +488,27 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
   // SIMPLIFIED: Inisialisasi form - cek apakah ada data untuk jam saat ini
   void _initializeFormMode() async {
     final currentHour = DateTime.now().hour;
-    final today = DateTime.now();
-    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    
-    print('🔄 FORM_INIT: Initializing form for ${widget.generatorName} hour: $currentHour on $dateKey');
+    final dateKey = StorageService.formatLogsheetDateKey();
+
+    print(
+      '🔄 FORM_INIT: Menginisialisasi form for ${widget.generatorName} hour: $currentHour on logsheet date: $dateKey',
+    );
 
     // Pastikan file ID konsisten untuk hari ini
     await GeneratorDataManager.ensureConsistentFileId(widget.generatorName);
 
     // Ambil fileId dari storage (sudah ter-filter untuk hari ini)
-    final storedFileId = await StorageService.getActiveFileId(
+    final storedFileId = await StorageService.getFileIdWithFirestoreSync(
       widget.generatorName,
     );
-    
+
     if (storedFileId != null && storedFileId.isNotEmpty) {
       setState(() {
         _activeFileId = storedFileId;
       });
-      print('✅ FORM_INIT: Using consistent fileId for ${widget.generatorName}: ${storedFileId.substring(0, 15)}...');
+      print(
+        '✅ FORM_INIT: Using consistent fileId for ${widget.generatorName}: ${storedFileId.substring(0, 15)}...',
+      );
     } else if (widget.activeFileId != null && widget.activeFileId!.isNotEmpty) {
       setState(() {
         _activeFileId = widget.activeFileId;
@@ -334,17 +518,24 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         widget.generatorName,
         widget.activeFileId!,
       );
-      await GeneratorDataManager.updateGeneratorFileId(widget.generatorName, widget.activeFileId!);
-      print('✅ FORM_INIT: Saved passed fileId for ${widget.generatorName}: ${widget.activeFileId!.substring(0, 15)}...');
+      await GeneratorDataManager.updateGeneratorFileId(
+        widget.generatorName,
+        widget.activeFileId!,
+      );
+      print(
+        '✅ FORM_INIT: Saved passed fileId for ${widget.generatorName}: ${widget.activeFileId!.substring(0, 15)}...',
+      );
     } else {
-      print('⚠️ FORM_INIT: No fileId available for ${widget.generatorName} on $dateKey');
+      print(
+        '⚠️ FORM_INIT: No fileId available for ${widget.generatorName} on $dateKey',
+      );
     }
 
-    // Muat data existing dari storage atau spreadsheet
+    // Load data existing dari storage atau spreadsheet
     await _loadExistingData();
   }
 
-  // Muat data existing dari spreadsheet atau storage
+  // Load data existing dari spreadsheet atau storage
   Future<void> _loadExistingData() async {
     try {
       print(
@@ -371,12 +562,12 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
                 });
               }
               _fillFormWithExistingData(spreadsheetData);
-              print('✅ MODE SET: EDIT - Data dimuat dari spreadsheet');
-              print('📝 UI WILL SHOW: tombol Edit Data');
+              print('MODE: EDIT - Data berhasil dimuat dari spreadsheet');
+              print('UI: Tampilkan tombol Edit Data');
               return;
             }
           } catch (e) {
-            print('❌  loading from spreadsheet: $e');
+            print('❌ Error loading from spreadsheet: $e');
           }
         }
       }
@@ -389,10 +580,10 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         });
       }
       _clearFormForNewHour();
-      print('✅ MODE SET: SIMPAN BARU - Tidak ada data untuk jam ini');
-      print('📝 UI WILL SHOW: tombol Simpan Data');
+      print('✅ MODE SET: SIMPAN BARU - No data found for current hour');
+      print('📝 UI WILL SHOW: Simpan Data button');
     } catch (e) {
-      print('❌  loading existing data: $e');
+      print('❌ Error loading existing data: $e');
       if (mounted) {
         setState(() {
           _hasExistingData = false;
@@ -406,13 +597,11 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     final currentHour = DateTime.now().hour;
     final fileId = _activeFileId;
 
-    print('🔍  SPREADSHEET: Hour=$currentHour, FileId=$fileId');
+    print('🔍 CHECKING SPREADSHEET: Hour=$currentHour, FileId=$fileId');
 
     // 🔄 SMART CACHE: Check if this is the first time checking this hour today
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final dateKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = StorageService.formatLogsheetDateKey();
     final lastCheckedHourKey = 'lastCheckedHour_$dateKey';
     final lastCheckedHour = prefs.getInt(lastCheckedHourKey) ?? -1;
 
@@ -441,7 +630,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
       }
     }
 
-    // Bersihkan up old cache daily
+    // Clean up old cache daily
     await StorageService.cleanupOldHourDataCache();
 
     // 🧪 TESTING: Let's also check hour 9 to see how it behaves when data exists
@@ -453,12 +642,12 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     }
 
     if (fileId == null) {
-      print('🔍 : Tidak ada fileId aktif, anggap tidak ada data');
+      print('🔍 RESULT: No active fileId, assuming no data');
       return false;
     }
 
     try {
-      // 🔄 RETRY MECHANISM: Try multiple times to handle Google Sheets API latency
+      // Mechanism retry untuk menangani latensi Google Sheets API
       Map<String, dynamic> spreadsheetData = {};
       int maxRetries = 3;
       int retryCount = 0;
@@ -484,22 +673,22 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
           }
 
           final testCellValue = spreadsheetData[testTargetCell];
-          print('🔄  CHECK: Cell $testTargetCell = "$testCellValue"');
+          print('🔄 RETRY CHECK: Cell $testTargetCell = "$testCellValue"');
 
           // If we recently saved data but still getting null, retry
           if (testCellValue == null ||
               testCellValue.toString().trim().isEmpty ||
               testCellValue.toString() == 'null') {
-            print('🔄 RETRY: Data belum terpropagasi, will ...');
+            print('🔄 RETRY: Data not propagated yet, will retry...');
           } else {
-            print('🔄 SUCCESS: Data real ditemukan, stopping ');
+            print('🔄 SUCCESS: Real data found, stopping retry');
             break;
           }
         }
 
         retryCount++;
         if (retryCount < maxRetries) {
-          print('⏳ : Tunggu 3 detik sebelum coba lagi...');
+          print('⏳ RETRY: Waiting 3 seconds before next attempt...');
           await Future.delayed(const Duration(seconds: 3));
         }
       }
@@ -523,10 +712,8 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         targetCell = 'D$rowNumber'; // Cell jam operasi
       }
 
-      // Debug: Print semua data dalam range C13-C36 dan D13-D36
-      print(
-        '🔍 SPREADSHEET DEBUG - All cells C13-C36 (time) and D13-D36 (jamOperasi):',
-      );
+      // : Print semua data dalam range C13-C36 dan D13-D36
+      print('🔍 SPREADSHEET :');
       for (int i = 13; i <= 36; i++) {
         final timeCell = 'C$i';
         final jamCell = 'D$i';
@@ -542,7 +729,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
       final hasData =
           cellValue != null && cellValue.toString().trim().isNotEmpty;
 
-      print('🔍  CELL: $targetCell for hour $currentHour');
+      print('🔍 CHECKING CELL: $targetCell for hour $currentHour');
       print('🔍 JAM OPERASI VALUE: "$cellValue"');
 
       // Cek ulang dengan cell lain di row yang sama (seperti RPM)
@@ -561,7 +748,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
       // Anggap ada data jika jam operasi ATAU RPM terisi
       final finalHasData = hasData || hasRpmData;
 
-      print('🔍  CELL: $targetCell for hour $currentHour');
+      print('🔍 CHECKING CELL: $targetCell for hour $currentHour');
       print('🔍 JAM OPERASI VALUE: "$cellValue"');
       print('🔍 RPM CELL: $rpmCell');
       print('🔍 RPM VALUE: "$rpmValue"');
@@ -571,7 +758,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
       return finalHasData;
     } catch (e) {
-      print('🔍 ERROR  spreadsheet data: $e');
+      print('🔍 ERROR checking spreadsheet data: $e');
       return false; // Jika error, anggap tidak ada data (mode simpan)
     }
   }
@@ -585,7 +772,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     try {
       final spreadsheetData = await LogsheetService.readLogsheetData(fileId);
 
-      // 🔍 DEBUG: Print structure in the correct order based on actual spreadsheet
+      // 🔍 : Print structure in the correct order based on actual spreadsheet
       print('🧪 SPREADSHEET STRUCTURE (key fields):');
       final keyFields = [
         'C$testHour',
@@ -622,7 +809,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         }
       }
 
-      // 🔍 DEBUG: Print expected structure for reference
+      // 🔍 : Print expected structure for reference
       print('🧪 EXPECTED STRUCTURE (based on Anda\'s specification):');
       print(
         '🧪   C13=Time(10:00), D13=HM Mesin, E13=RPM, F13=L/O Temp, G13=Oil Press',
@@ -653,7 +840,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
       final jamOperasiValue = spreadsheetData[targetCell];
       final rpmValue = spreadsheetData[rpmCell];
 
-      print('🧪 TEST  for Hour $testHour:');
+      print('🧪 TEST RESULT for Hour $testHour:');
       print('🧪   Expected Jam Operasi cell: $targetCell');
       print('🧪   Expected RPM cell: $rpmCell');
       print('🧪   Jam Operasi value: "$jamOperasiValue"');
@@ -664,7 +851,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
       // 🔍 Let's also check if data exists in different rows for hour 9
       if (testHour == 9) {
-        print('🧪 EXTRA CHECK for hour 9 -  various possible rows:');
+        print('🧪 Check tambahan');
         for (int row = 30; row <= 40; row++) {
           final testCell = 'D$row';
           final testValue = spreadsheetData[testCell];
@@ -676,13 +863,13 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         }
       }
     } catch (e) {
-      print('🧪 TEST : $e');
+      print('🧪 TEST ERROR: $e');
     }
   }
 
   // Bersihkan form untuk jam baru
   void _clearFormForNewHour() {
-    print('Bersihkan form untuk jam baru: ${DateTime.now().hour}');
+    print('Clearing form for new hour: ${DateTime.now().hour}');
 
     // Reset semua field termasuk jam operasi (let user input manually)
     _jamOperasiController.clear(); // ✅ CHANGED: Clear instead of auto-fill
@@ -711,16 +898,17 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     // Reset data yang ada
     _existingData.clear();
 
-    print('Form dibersihkan untuk entry jam baru');
+    print('Form cleared for new hour entry');
   }
 
   // Fill form dengan data existing
   void _fillFormWithExistingData(Map<String, dynamic> data) {
     print(
-      'Filling form with data for jam: ${data['jamOperasi']}, saved at hour: ${data['_savedHour']}',
+      '📝 FORM_FILL: Filling form with data for jam: ${data['jamOperasi']}, saved at hour: ${data['_savedHour']}',
     );
+    print('📝 FORM_FILL: Available data keys: ${data.keys.toList()}');
 
-    // Isi form dengan data (abaikan metadata yang diawali dengan _)
+    // Isi form dengan data operational (abaikan metadata yang diawali dengan _)
     _jamOperasiController.text = data['jamOperasi']?.toString() ?? '';
     _rpmController.text = data['rpm']?.toString() ?? '';
     _lubeOilTempController.text = data['lubeOilTemp']?.toString() ?? '';
@@ -745,12 +933,22 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         data['enginePressureCrankcase']?.toString() ?? '';
     _engineTempExhaustController.text =
         data['engineTempExhaust']?.toString() ?? '';
-    print('Form filled fully');
+
+    // ⚡ PERBAIKAN: Isi energy fields (kWh dan BBM) yang sebelumnya terlewat
+    _kwhAwalController.text = data['kwhAwal']?.toString() ?? '';
+    _kwhAkhirController.text = data['kwhAkhir']?.toString() ?? '';
+    _bbmAwalController.text = data['bbmAwal']?.toString() ?? '';
+    _bbmAkhirController.text = data['bbmAkhir']?.toString() ?? '';
+
+    print('✅ FORM_FILL: Form filled successfully including energy fields');
+    print(
+      '📊 FORM_FILL: Energy data - kWh: ${data['kwhAwal']} → ${data['kwhAkhir']}, BBM: ${data['bbmAwal']} → ${data['bbmAkhir']}',
+    );
   }
 
   // Cek apakah waktu sudah memungkinkan untuk entry baru
   bool _canCreateNewEntry() {
-    // HapusD: Tidak perlu lagi cek canCreateNewEntry
+    // REMOVED: Tidak perlu lagi cek canCreateNewEntry
     return true;
   }
 
@@ -770,7 +968,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     if (_hasExistingData) {
       return Colors.grey.shade600; // Edit mode - data sudah ada untuk jam ini
     } else {
-      return const Color(0xFF1E3A8A); // Simpan mode - warna biru aplikasi
+      return const Color(0xFF1E3A8A); // Save mode - warna biru aplikasi
     }
   }
 
@@ -779,7 +977,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
     if (_hasExistingData) {
       return Icons.edit; // Edit mode - data sudah ada untuk jam ini
     } else {
-      return Icons.save; // Simpan mode - belum ada data untuk jam ini
+      return Icons.save; // Save mode - belum ada data untuk jam ini
     }
   }
 
@@ -796,11 +994,17 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
   @override
   void dispose() {
-    // Bersihkanup collaboration timer
+    // Cleanup collaboration timer
     _saveDraftTimer?.cancel();
     _activityTimer?.cancel();
 
-    // Selesai collaboration session
+    // Cleanup real-time sync listener
+    _firestoreListener?.cancel();
+
+    // Cleanup periodic data checker
+    _periodicDataChecker?.cancel();
+
+    // End collaboration session
     final currentHour = DateTime.now().hour;
     SimpleCollaborationService.endEditing(
       generatorName: widget.generatorName,
@@ -1144,7 +1348,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         });
       }
 
-      // Bersihkan all form controllers
+      // Clear all form controllers
       _clearFormControllers();
 
       // Navigate back to dashboard
@@ -1172,14 +1376,14 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
   Future<void> _clearLocalData() async {
     try {
-      // Bersihkan local storage data for this generator
+      // Clear local storage data for this generator
       await StorageService.saveActiveFileId(widget.generatorName, '');
       await StorageService.saveGeneratorStatus(widget.generatorName, false);
       await StorageService.saveLastLogsheetData(widget.generatorName, {});
 
       print('Local data cleared for ${widget.generatorName}');
     } catch (e) {
-      print(' clearing local data: $e');
+      print('Error clearing local data: $e');
       throw e;
     }
   }
@@ -1285,11 +1489,13 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
                                 result['fileId'],
                               );
                               await GeneratorDataManager.updateGeneratorFileId(
-                                widget.generatorName, 
+                                widget.generatorName,
                                 result['fileId'],
                               );
 
-                              print('✅ NEW_SPREADSHEET: Created and saved fileId for ${widget.generatorName}: ${result['fileId'].substring(0, 15)}...');
+                              print(
+                                '✅ NEW_SPREADSHEET: Created and saved fileId for ${widget.generatorName}: ${result['fileId'].substring(0, 15)}...',
+                              );
 
                               // Hapus snackbar loading
                               scaffoldMessenger.hideCurrentSnackBar();
@@ -1737,6 +1943,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   _getButtonIcon(),
@@ -1744,12 +1951,15 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  _getButtonText(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                Flexible(
+                                  child: Text(
+                                    _getButtonText(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -1986,7 +2196,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         'sfc': _sfcController.text,
       };
 
-      print('🔍 ENERGY SAVE : Saving energy data:');
+      print('🔍 ENERGY SAVE :');
       print('   📅 tanggal: ${energyData['tanggal']}');
       print('   🕐 jam: ${energyData['jam']}');
       print(
@@ -2008,7 +2218,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
       );
       print('✅ ENERGY: Saved to SQLite database');
 
-      // Atur state bahwa data energi/BBM sudah diisi (bahkan jika gagal ke spreadsheet)
+      // Set state bahwa data energi/BBM sudah diisi (bahkan jika gagal ke spreadsheet)
       setState(() {
         _hasEnergyBbmData = true;
       });
@@ -2063,7 +2273,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         if (result['success'] == true) {
           print('✅ ENERGY: Data berhasil dikirim ke spreadsheet dan Firestore');
 
-          // Atur state bahwa data energi/BBM sudah diisi
+          // Set state bahwa data energi/BBM sudah diisi
           setState(() {
             _hasEnergyBbmData = true;
           });
@@ -2084,7 +2294,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
           );
         }
       } catch (e) {
-        print('❌ ENERGY:  saving to spreadsheet: $e');
+        print('❌ ENERGY: Error saving to spreadsheet: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -2096,7 +2306,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         );
       }
     } catch (e) {
-      print('❌ ENERGY:  saving energy data: $e');
+      print('❌ ENERGY: Error saving energy data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Gagal menyimpan data energi: $e'),
@@ -2154,7 +2364,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
       print('ℹ️ ENERGY: No previous day data found for auto-fill');
     } catch (e) {
-      print('⚠️ ENERGY:  loading previous day data: $e');
+      print('⚠️ ENERGY: Error loading previous day data: $e');
     }
   }
 
@@ -2173,7 +2383,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
       if (activeFileId == null || activeFileId.isEmpty) {
         print(
-          '⚠️ ENERGY: Tidak ada fileId aktif available for loading existing data',
+          '⚠️ ENERGY: No active fileId available for loading existing data',
         );
         return;
       }
@@ -2184,7 +2394,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
       // Method 1: Cek dari spreadsheet API terlebih dahulu (lebih reliable)
       try {
-        print('🔍 ENERGY:  spreadsheet for existing energy data...');
+        print('🔍 ENERGY: Checking spreadsheet for existing energy data...');
         final logsheetData = await LogsheetService.readLogsheetData(
           activeFileId,
         );
@@ -2211,7 +2421,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
             '✅ ENERGY: Found existing energy data in spreadsheet, loading to form',
           );
 
-          // Muat data ke controllers
+          // Load data ke controllers
           _kwhAwalController.text = kwhAwal;
           _kwhAkhirController.text = kwhAkhir;
           _totalKwhController.text = totalKwh;
@@ -2220,12 +2430,12 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
           _totalBbmController.text = totalBbm;
           _sfcController.text = sfc;
 
-          // Atur state bahwa data sudah ada
+          // Set state bahwa data sudah ada
           setState(() {
             _hasEnergyBbmData = true;
           });
 
-          print('✅ ENERGY: Existing Data dimuat dari spreadsheet');
+          print('✅ ENERGY: Existing data loaded from spreadsheet');
           return;
         }
       } catch (e) {
@@ -2300,7 +2510,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
               '✅ ENERGY: Found existing energy data in database, loading to form',
             );
 
-            // Muat data ke controllers
+            // Load data ke controllers
             _kwhAwalController.text = kwhAwal;
             _kwhAkhirController.text = kwhAkhir;
             _totalKwhController.text = totalKwh;
@@ -2309,7 +2519,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
             _totalBbmController.text = totalBbm;
             _sfcController.text = sfc;
 
-            // Atur state bahwa data sudah ada
+            // Set state bahwa data sudah ada
             setState(() {
               _hasEnergyBbmData = true;
             });
@@ -2322,7 +2532,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
 
       print('ℹ️ ENERGY: No existing energy data found for today');
     } catch (e) {
-      print('⚠️ ENERGY:  loading existing energy data: $e');
+      print('⚠️ ENERGY: Error loading existing energy data: $e');
     }
   }
 
@@ -2407,7 +2617,7 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         }
 
         // Debug log untuk memastikan tanggal dan jam benar
-        print('🔍 TIMESTAMP : Saving data with:');
+        print('🔍 TIMESTAMP :');
         print('   📅 tanggal: ${logsheetData['tanggal']}');
         print('   🕐 jam: ${logsheetData['jam']}');
         print('   📊 generatorName: ${logsheetData['generatorName']}');
@@ -2450,11 +2660,124 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         // Fallback ke method lama
         if (!saveSuccess) {
           try {
-            await LogsheetService.saveLogsheetData(activeFileId, logsheetData);
-            saveSuccess = true;
+            print(
+              '🚀 FORM: Calling enhanced saveLogsheetDataWithFallback method...',
+            );
+            print('🚀 FORM: activeFileId = "$activeFileId"');
+            print('🚀 FORM: logsheetData keys = ${logsheetData.keys.toList()}');
+            // Use new method with graceful degradation
+            final result = await LogsheetService.saveLogsheetDataWithFallback(
+              activeFileId,
+              logsheetData,
+            );
+
+            if (result['success'] == true) {
+              saveSuccess = true;
+
+              // Show appropriate message based on what succeeded
+              if (result['googleSheetsSuccess'] == true) {
+                print(
+                  '✅ SAVE: Data berhasil disimpan ke Google Sheets dan database lokal',
+                );
+                _scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Data berhasil disimpan ke Google Sheets'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                print(
+                  '⚠️ SAVE: Data tersimpan lokal, tapi gagal ke Google Sheets: ${result['googleSheetsError']}',
+                );
+
+                // Check if it's a permission-related error
+                String? errorMsg = result['googleSheetsError']
+                    ?.toString()
+                    .toLowerCase();
+                bool isPermissionIssue =
+                    result['permissionIssueDetected'] == true ||
+                    errorMsg?.contains('permission') == true ||
+                    errorMsg?.contains('500') == true ||
+                    errorMsg?.contains('access denied') == true ||
+                    errorMsg?.contains('unauthorized') == true;
+
+                if (isPermissionIssue) {
+                  _scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        '🔄 Data tersimpan lokal. Sistem sedang mengatur akses multi-device... Coba simpan lagi dalam 10 detik.',
+                      ),
+                      backgroundColor: Colors.amber,
+                      duration: const Duration(seconds: 8),
+                      action: SnackBarAction(
+                        label: 'Mengerti',
+                        textColor: Colors.white,
+                        onPressed: () =>
+                            _scaffoldMessenger.hideCurrentSnackBar(),
+                      ),
+                    ),
+                  );
+                } else {
+                  _scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        '⚠️ Data tersimpan lokal, namun gagal tersimpan ke Google Sheets',
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: const Duration(seconds: 4),
+                      action: SnackBarAction(
+                        label: 'OK',
+                        onPressed: () =>
+                            _scaffoldMessenger.hideCurrentSnackBar(),
+                      ),
+                    ),
+                  );
+                }
+              }
+            } else {
+              throw Exception(
+                'Failed to save to both Google Sheets and local database',
+              );
+            }
           } catch (e) {
-            print('Legacy API save : $e');
-            rethrow;
+            print('Enhanced API save failed: $e');
+
+            // Check if this is a permission-related error for better user messaging
+            String errorMessage = e.toString().toLowerCase();
+            bool isPermissionError =
+                errorMessage.contains('permission issue detected') ||
+                errorMessage.contains('auto-sharing') ||
+                errorMessage.contains('500') ||
+                errorMessage.contains('access denied');
+
+            if (isPermissionError) {
+              _scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    '🔄 Mengatasi masalah akses multi-device... Silakan coba lagi dalam beberapa saat.',
+                  ),
+                  backgroundColor: Colors.blue,
+                  duration: const Duration(seconds: 6),
+                  action: SnackBarAction(
+                    label: 'Mengerti',
+                    onPressed: () => _scaffoldMessenger.hideCurrentSnackBar(),
+                  ),
+                ),
+              );
+            }
+
+            // Last resort: try legacy method
+            try {
+              await LogsheetService.saveLogsheetData(
+                activeFileId,
+                logsheetData,
+              );
+              saveSuccess = true;
+            } catch (legacyError) {
+              print('Legacy API save also failed: $legacyError');
+              rethrow;
+            }
           }
         }
 
@@ -2518,11 +2841,45 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
         // Hapus loading snackbar
         _scaffoldMessenger.hideCurrentSnackBar();
 
-        // Tampilkan pesan error
+        // Enhanced error handling dengan specific messages
+        String errorMessage;
+        Color errorColor = Colors.red;
+
+        if (e.toString().contains(
+              'Server error: Unable to update spreadsheet',
+            ) ||
+            e.toString().contains('Permission denied') ||
+            e.toString().contains('Failed to update logsheet data: 500')) {
+          errorMessage =
+              '⚠️ Data tersimpan lokal, tapi gagal ke spreadsheet. Exception: Failed to update logsheet data: 500';
+          errorColor = Colors.orange;
+
+          print(
+            '📊 PERMISSION ISSUE: Spreadsheet update failed due to permissions',
+          );
+          print(
+            '✅ LOCAL SAVE: Data tetap tersimpan di database lokal dan akan tersync via Firestore',
+          );
+
+          // Tetap trigger sync ke Firestore walau Google Sheets gagal
+          _triggerImmediateSync();
+        } else if (e.toString().contains(
+          'Permission denied to access logsheet',
+        )) {
+          errorMessage =
+              '❌ Tidak bisa akses spreadsheet. Hubungi pembuat logsheet untuk memberikan akses.';
+          errorColor = Colors.red;
+        } else {
+          errorMessage = 'Gagal menyimpan logsheet: ${e.toString()}';
+          errorColor = Colors.red;
+        }
+
+        // Tampilkan pesan error yang sesuai
         _scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan logsheet: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text(errorMessage),
+            backgroundColor: errorColor,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -2535,12 +2892,12 @@ class _LogsheetFormScreenState extends State<LogsheetFormScreen> {
       print('🚀 IMMEDIATE SYNC: Triggering upload after data save...');
       final success = await SyncManager.instance.triggerImmediateUpload();
       if (success) {
-        print('✅ IMMEDIATE SYNC: Data uploaded to Firestore fully');
+        print('✅ IMMEDIATE SYNC: Data uploaded to Firestore berhasil');
       } else {
-        print('⚠️ IMMEDIATE SYNC: Upload  or no data to sync');
+        print('⚠️ IMMEDIATE SYNC: Upload failed or no data to sync');
       }
     } catch (e) {
-      print('❌ IMMEDIATE SYNC:  during immediate sync: $e');
+      print('❌ IMMEDIATE SYNC: Error during immediate sync: $e');
       // Don't show error to user - sync failure shouldn't block UI
     }
   }
