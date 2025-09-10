@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../services/shift_photo_service.dart';
 import '../models/firebase_user_model.dart';
+import 'user_management_screen_themed.dart';
 
 class PengaturanScreen extends StatefulWidget {
   const PengaturanScreen({super.key});
@@ -17,6 +19,7 @@ class _PengaturanScreenState extends State<PengaturanScreen>
   String? _todayPhotoUrl;
   bool _hasPhotoToday = false;
   String _currentShift = '';
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -65,6 +68,10 @@ class _PengaturanScreenState extends State<PengaturanScreen>
       if (mounted) {
         setState(() {
           currentUser = user;
+          // Cek apakah user adalah admin
+          _isAdmin = user != null && 
+                    user.role == 'admin' && 
+                    user.permissions.canManageUsers;
         });
       }
     } catch (e) {
@@ -482,6 +489,18 @@ class _PengaturanScreenState extends State<PengaturanScreen>
                     'Tentang Aplikasi',
                     subtitle: 'Versi 7.7.7',
                   ),
+                  
+                  // Menu khusus admin
+                  if (_isAdmin) ...[
+                    const SizedBox(height: 10),
+                    const Divider(color: Colors.grey),
+                    const SizedBox(height: 10),
+                    _buildMenuItem(
+                      Icons.admin_panel_settings,
+                      'Panel Admin',
+                      subtitle: 'Manajemen user, sistem & Google Drive',
+                    ),
+                  ],
 
                   const SizedBox(height: 10),
                   // Logout Button
@@ -586,7 +605,250 @@ class _PengaturanScreenState extends State<PengaturanScreen>
             ? Text(subtitle, style: const TextStyle(fontSize: 12))
             : null,
         trailing: const Icon(Icons.chevron_right, color: Colors.black26),
-        onTap: () {},
+        onTap: () => _handleMenuTap(title),
+      ),
+    );
+  }
+
+  void _handleMenuTap(String menuTitle) {
+    switch (menuTitle) {
+      case 'Panel Admin':
+        _navigateToAdminPanel();
+        break;
+      default:
+        // Menu lain yang belum diimplementasi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$menuTitle belum tersedia')),
+        );
+        break;
+    }
+  }
+
+  void _navigateToAdminPanel() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.admin_panel_settings, color: Color(0xFF1E3A8A)),
+              SizedBox(width: 12),
+              Text(
+                'Panel Admin',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildAdminMenuOption(
+                Icons.people_outline,
+                'Manajemen User',
+                'Tambah, edit, dan hapus pengguna',
+                () {
+                  Navigator.of(context).pop();
+                  _navigateToUserManagement();
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildAdminMenuOption(
+                Icons.folder_open,
+                'Google Drive',
+                'Akses folder logsheet dan template',
+                () {
+                  Navigator.of(context).pop();
+                  _showGoogleDriveLinks();
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Tutup'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAdminMenuOption(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF1E3A8A)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  void _navigateToUserManagement() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const UserManagementScreen(),
+      ),
+    );
+  }
+
+  void _showGoogleDriveLinks() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Google Drive Links'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Akses folder dan template Google Drive:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Klik untuk membuka langsung di browser',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              _buildDriveLink(
+                'Folder Logsheet PLTD',
+                'Klik untuk membuka folder utama logsheet di Google Drive',
+                'https://drive.google.com/drive/folders/1tJHamjKGq6KmXlhAVrmIEKze6ARLteGO',
+                Icons.folder,
+              ),
+              const SizedBox(height: 12),
+              
+              _buildDriveLink(
+                'Template Logsheet',
+                'Klik untuk membuka template Google Sheets',
+                'https://docs.google.com/spreadsheets/d/17bXUXVnETMzqzQ7JtlVPpm8p6Y2vMf8MpbyKxE2gyy8/edit',
+                Icons.description,
+              ),
+              const SizedBox(height: 16),
+              
+              const Text(
+                'Catatan: Link ini hanya dapat diakses oleh admin.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchURL(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      
+      // Langsung buka di browser
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication, // Buka di browser eksternal
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Tidak dapat membuka link: $url'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error membuka link: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildDriveLink(String title, String description, String url, IconData icon) {
+    return InkWell(
+      onTap: () async {
+        await _launchURL(url);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF2196F3)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.open_in_new, size: 16),
+          ],
+        ),
       ),
     );
   }
